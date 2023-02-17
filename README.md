@@ -1,9 +1,8 @@
 # Spring Data Examples
-Spring Data Examples
 
-*Guide to Spring Data* course on http://educative.io
+**Guide to Spring Data** course on http://educative.io
 
-Chapter-wise spring data examples for the course
+Chapter-wise Spring Data examples for the course
 
 * Chapter 1 - Introduction to Spring Data
 * Chapter 2 - Spring Data in Detail
