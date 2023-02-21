@@ -1,1 +1,0 @@
-insert into person (name) values ('anshul');
