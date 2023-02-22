@@ -1,6 +1,7 @@
 package com.smartdiscover;
 
 import com.smartdiscover.entity.Person;
+import com.smartdiscover.entity.events.PersonCreationEvent;
 import com.smartdiscover.repository.CustomPersonRepository;
 import com.smartdiscover.repository.CustomPersonRepositoryImpl;
 import com.smartdiscover.repository.PersonRepository;
@@ -12,6 +13,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.stream.Collectors;
 
@@ -31,6 +34,14 @@ public class SpringDataApplication implements CommandLineRunner {
     @Bean
     CustomPersonRepository getCustomPersonRepository() {
         return new CustomPersonRepositoryImpl();
+    }
+
+    /**
+     * listener method to handle the PersonCreationEvent using the After Commit transaction phase
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTodoCreationEvent(PersonCreationEvent event) {
+        log.info("Handled PersonCreationEvent...");
     }
 
     @Override
@@ -54,6 +65,7 @@ public class SpringDataApplication implements CommandLineRunner {
         Person person4 = new Person();
         person4.setFirstName("Ronald");
         person4.setLastName("Weasely");
+        person4.afterSave();
         personRepository.save(person4);
 
         log.info(String.valueOf(personRepository.findAll()));
