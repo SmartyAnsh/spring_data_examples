@@ -12,9 +12,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @SpringBootApplication
 public class SpringDataJdbcApplication implements CommandLineRunner {
@@ -55,7 +53,8 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
 
         log.info(String.valueOf(authorRepository.findAll()));
 
-        List list = jdbcTemplate.queryForList("select * from book order by id desc");;
+        List list = jdbcTemplate.queryForList("select * from book order by id desc");
+        ;
         log.info(String.valueOf(list));
     }
 

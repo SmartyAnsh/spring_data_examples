@@ -1,10 +1,14 @@
 package com.smartdiscover;
 
+import com.querydsl.core.types.Predicate;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.smartdiscover.entity.Person;
+import com.smartdiscover.entity.QPerson;
 import com.smartdiscover.entity.events.PersonCreationEvent;
 import com.smartdiscover.repository.CustomPersonRepository;
 import com.smartdiscover.repository.CustomPersonRepositoryImpl;
 import com.smartdiscover.repository.PersonRepository;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
@@ -25,6 +30,9 @@ public class SpringDataApplication implements CommandLineRunner {
 
     @Autowired
     private PersonRepository personRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     public static void main(String[] args) {
         SpringApplication.run(SpringDataApplication.class, args);
@@ -40,7 +48,7 @@ public class SpringDataApplication implements CommandLineRunner {
      * listener method to handle the PersonCreationEvent using the After Commit transaction phase
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleTodoCreationEvent(PersonCreationEvent event) {
+    public void handlePersonCreationEvent(PersonCreationEvent event) {
         log.info("Handled PersonCreationEvent...");
     }
 
@@ -88,7 +96,21 @@ public class SpringDataApplication implements CommandLineRunner {
 
         log.info(String.valueOf(getCustomPersonRepository().findPersonCustom("Anshul", "Bansal")));
 
-        log.info(String.valueOf(personRepository.findFirstByOrderByFirstNameDesc().getFullName()));
+        log.info(personRepository.findFirstByOrderByFirstNameDesc().getFullName());
+
+        log.info("let's try query dsl");
+
+        QPerson person = QPerson.person;
+        Predicate predicate = person.firstName.equalsIgnoreCase("anshul")
+                .and(person.lastName.startsWithIgnoreCase("Bansal"));
+
+        log.info("Fetched results using PersonRepository and Predicate: " + personRepository.findAll(predicate));
+
+
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        List<Person> persons = queryFactory.selectFrom(person).where(person.firstName.eq("Anshul")).fetch();
+
+        log.info("Fetched results using JPAQueryFactory and EntityManager: " + persons);
     }
 
 }
