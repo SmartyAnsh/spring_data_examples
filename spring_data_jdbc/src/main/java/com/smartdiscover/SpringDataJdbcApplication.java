@@ -74,6 +74,9 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
         log.info(String.valueOf(bookMapper.getBook(1L)));
 
         log.info(String.valueOf(bookMapper.saveBook("Zero to one", "Notes on startups, or How to build the future")));
+
+        //check lock
+        log.info(String.valueOf(bookRepository.findFirstByNameOrderByNameAsc("Zero to one")));
     }
 
 }
