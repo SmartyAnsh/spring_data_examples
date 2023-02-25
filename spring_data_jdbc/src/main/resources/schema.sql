@@ -7,7 +7,11 @@ create table AUTHOR (
 create table book (
     id      bigint primary key auto_increment,
     name    varchar(255),
-    summary varchar(255)
+    summary varchar(255),
+    created_at timestamp,
+    updated_at timestamp,
+    created_by varchar(255),
+    updated_by varchar(255)
 );
 
 create table author_book (

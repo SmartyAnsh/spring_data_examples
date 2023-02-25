@@ -11,9 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.Optional;
+
 @SpringBootApplication
+@EnableJdbcAuditing
 public class SpringDataJdbcApplication implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SpringDataJdbcApplication.class);
@@ -33,6 +39,11 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
 
     @Autowired
     BookMapper bookMapper;
+
+    @Bean
+    AuditorAware<String> auditorProvider() {
+        return () -> Optional.of("Administrator");
+    }
 
     @Override
     public void run(String... strings) throws Exception {

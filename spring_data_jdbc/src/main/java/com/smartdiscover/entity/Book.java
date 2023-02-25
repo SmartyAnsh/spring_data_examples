@@ -1,10 +1,11 @@
 package com.smartdiscover.entity;
 
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.*;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +19,18 @@ public class Book {
     private String name;
     private String summary;
 
+    @CreatedBy
+    private String createdBy;
+
+    @CreatedDate
+    private Date createdAt;
+
+    @LastModifiedBy
+    private String updatedBy;
+
+    @LastModifiedDate
+    private Date updatedAt;
+
     @MappedCollection(idColumn = "BOOK_ID")
     private Set<AuthorBook> authors = new HashSet<>();
 
@@ -27,6 +40,10 @@ public class Book {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", summary='" + summary + '\'' +
+                ", createdBy='" + createdBy + '\'' +
+                ", createdAt='" + createdAt + '\'' +
+                ", updatedBy='" + updatedBy + '\'' +
+                ", updatedAt='" + updatedAt + '\'' +
                 ", authors=" + authors.stream().mapToLong(i -> i.getAuthorId()).boxed().toList().toString() +
                 '}';
     }
