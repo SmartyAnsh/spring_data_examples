@@ -2,6 +2,7 @@ package com.smartdiscover;
 
 import com.smartdiscover.entity.Author;
 import com.smartdiscover.entity.Book;
+import com.smartdiscover.mapper.BookMapper;
 import com.smartdiscover.repository.AuthorRepository;
 import com.smartdiscover.repository.BookRepository;
 import org.slf4j.Logger;
@@ -11,8 +12,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.util.List;
 
 @SpringBootApplication
 public class SpringDataJdbcApplication implements CommandLineRunner {
@@ -32,10 +31,12 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
     @Autowired
     AuthorRepository authorRepository;
 
+    @Autowired
+    BookMapper bookMapper;
+
     @Override
     public void run(String... strings) throws Exception {
-
-        log.info("searching tables");
+        log.info("insert book and author using Jdbc repositories");
 
         Book book = new Book();
         book.setName("Martian");
@@ -49,13 +50,19 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
 
         jdbcTemplate.update("insert into author_book (author_id, book_id) values (?, ?)", author.getId(), book.getId());
 
+        log.info("find all books");
+
         log.info(String.valueOf(bookRepository.findAll()));
+
+        log.info("find all authors");
 
         log.info(String.valueOf(authorRepository.findAll()));
 
-        List list = jdbcTemplate.queryForList("select * from book order by id desc");
-        ;
-        log.info(String.valueOf(list));
+        log.info("find and insert book using ibatis mapper");
+
+        log.info(String.valueOf(bookMapper.getBook(1L)));
+
+        log.info(String.valueOf(bookMapper.saveBook("Zero to one", "Notes on startups, or How to build the future")));
     }
 
 }
