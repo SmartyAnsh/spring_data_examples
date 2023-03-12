@@ -2,6 +2,7 @@ package com.smartdiscover;
 
 import com.smartdiscover.entity.Author;
 import com.smartdiscover.entity.Book;
+import com.smartdiscover.mapper.AuthorMapper;
 import com.smartdiscover.mapper.BookMapper;
 import com.smartdiscover.repository.AuthorRepository;
 import com.smartdiscover.repository.BookRepository;
@@ -40,6 +41,9 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
     @Autowired
     BookMapper bookMapper;
 
+    @Autowired
+    AuthorMapper authorMapper;
+
     @Bean
     AuditorAware<String> auditorProvider() {
         return () -> Optional.of("Administrator");
@@ -69,11 +73,43 @@ public class SpringDataJdbcApplication implements CommandLineRunner {
 
         log.info(String.valueOf(authorRepository.findAll()));
 
+        log.info("CRUD features started");
+
+        log.info("CREATE");
+        Book egoIsTheEnemy = new Book();
+        egoIsTheEnemy.setName("Ego is the enemy");
+        egoIsTheEnemy.setSummary("The fight to master our greatest opponent");
+        bookRepository.save(egoIsTheEnemy);
+
+        Author ryanHoliday = new Author();
+        ryanHoliday.setFirstName("Ryan");
+        ryanHoliday.setLastName("Holiday");
+        authorRepository.save(ryanHoliday);
+
+        log.info("READ");
+        log.info(String.valueOf(bookRepository.findById(egoIsTheEnemy.getId())));
+        log.info(String.valueOf(authorRepository.findById(ryanHoliday.getId())));
+
+        log.info("UDPATE");
+        egoIsTheEnemy.setSummary("The fight to master our greatest opponent from Ryan Holiday");
+        bookRepository.save(egoIsTheEnemy);
+
+        ryanHoliday.setLastName("Holi");
+        authorRepository.save(ryanHoliday);
+
+        log.info("DELETE");
+        bookRepository.delete(egoIsTheEnemy);
+        authorRepository.delete(ryanHoliday);
+
+        log.info("CRUD features done");
+
         log.info("find and insert book using ibatis mapper");
 
         log.info(String.valueOf(bookMapper.getBook(1L)));
-
         log.info(String.valueOf(bookMapper.saveBook("Zero to one", "Notes on startups, or How to build the future")));
+
+        log.info(String.valueOf(authorMapper.getAuthor(1L)));
+        log.info(String.valueOf(authorMapper.saveAuthor("Peter", "Theil")));
 
         //check lock
         log.info(String.valueOf(bookRepository.findFirstByNameOrderByNameAsc("Zero to one")));
