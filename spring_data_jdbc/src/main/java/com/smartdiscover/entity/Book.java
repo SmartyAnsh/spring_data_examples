@@ -40,11 +40,11 @@ public class Book {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", summary='" + summary + '\'' +
+                ", authors=" + authors.stream().mapToLong(i -> i.getAuthorId()).boxed().toList().toString() +
                 ", createdBy='" + createdBy + '\'' +
                 ", createdAt='" + createdAt + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +
                 ", updatedAt='" + updatedAt + '\'' +
-                ", authors=" + authors.stream().mapToLong(i -> i.getAuthorId()).boxed().toList().toString() +
                 '}';
     }
 }

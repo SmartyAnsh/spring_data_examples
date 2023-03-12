@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface AuthorMapper {
 
-    @Select("SELECT * FROM AUTHOR WHERE id = #{id}")
+    @Select("SELECT id, first_name as firstName, last_name as lastName FROM AUTHOR WHERE id = #{id}")
     Author getAuthor(@Param("id") Long id);
 
     @Insert("INSERT INTO AUTHOR (first_name, last_name) VALUES (#{firstName}, #{lastName})")

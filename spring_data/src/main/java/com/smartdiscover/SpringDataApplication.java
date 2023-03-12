@@ -21,6 +21,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
@@ -111,6 +112,29 @@ public class SpringDataApplication implements CommandLineRunner {
         List<Person> persons = queryFactory.selectFrom(person).where(person.firstName.eq("Anshul")).fetch();
 
         log.info("Fetched results using JPAQueryFactory and EntityManager: " + persons);
+
+        // CRUD features
+
+        log.info("CRUD features");
+
+        //Create
+        Person person5 = new Person();
+        person5.setFirstName("Hormonie");
+        person5.setLastName("Gringer");
+        person5.afterSave();
+        personRepository.save(person5);
+
+        //Read
+        Person p = personRepository.findFirstByLastNameOrderByFirstNameDesc("Gringer").get();
+        log.info(String.valueOf(p));
+
+        //Update
+        p.setLastName("Gringer1");
+        personRepository.save(p);
+        log.info(String.valueOf(p));
+
+        //Delete
+        personRepository.delete(p);
     }
 
 }
