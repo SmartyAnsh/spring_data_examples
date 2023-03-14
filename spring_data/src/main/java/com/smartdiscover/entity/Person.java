@@ -7,6 +7,8 @@ import org.springframework.data.domain.AbstractAggregateRoot;
 
 @Data
 @Entity
+@NamedQuery(name = "Person.searchUsingNamedQuery",
+        query = "select p from Person p where p.lastName = ?1 order by p.firstName desc limit 1")
 public class Person extends AbstractAggregateRoot<Person> {
 
     @Id

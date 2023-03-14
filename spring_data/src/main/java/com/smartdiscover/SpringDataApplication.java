@@ -77,6 +77,7 @@ public class SpringDataApplication implements CommandLineRunner {
         person4.afterSave();
         personRepository.save(person4);
 
+        //dynamic query methods
         log.info(String.valueOf(personRepository.findAll()));
 
         log.info(String.valueOf(personRepository.findAllByFirstName("Anshul")));
@@ -85,7 +86,11 @@ public class SpringDataApplication implements CommandLineRunner {
 
         log.info(String.valueOf(personRepository.findFirstByOrderByFirstNameAsc()));
 
-        log.info(String.valueOf(personRepository.fetchFirstPerson()));
+        //@Query
+        log.info(String.valueOf(personRepository.fetchFirstPersonUsingQuery()));
+
+        //@NamedQuery
+        log.info(String.valueOf(personRepository.searchUsingNamedQuery("Bansal")));
 
         log.info(
                 String.valueOf(personRepository
@@ -98,6 +103,8 @@ public class SpringDataApplication implements CommandLineRunner {
         log.info(String.valueOf(getCustomPersonRepository().findPersonCustom("Anshul", "Bansal")));
 
         log.info(personRepository.findFirstByOrderByFirstNameDesc().getFullName());
+        
+        log.info(personRepository.findFirstByOrderByLastNameAsc().getFirstName());
 
         log.info("let's try query dsl");
 

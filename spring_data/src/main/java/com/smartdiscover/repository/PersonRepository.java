@@ -2,6 +2,7 @@ package com.smartdiscover.repository;
 
 import com.smartdiscover.entity.Person;
 import com.smartdiscover.entity.projection.PersonFullName;
+import com.smartdiscover.entity.projection.PersonInfo;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.CrudRepository;
@@ -23,7 +24,11 @@ public interface PersonRepository extends CrudRepository<Person, Long>, CustomPe
     Stream<Person> readAllByOrderById();
 
     @Query("select p from Person p order by p.id asc limit 1")
-    Person fetchFirstPerson();
+    Person fetchFirstPersonUsingQuery();
+
+    Person searchUsingNamedQuery(String lastName);
 
     PersonFullName findFirstByOrderByFirstNameDesc();
+
+    PersonInfo findFirstByOrderByLastNameAsc();
 }
