@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public class Author {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(name = "FIRST_NAME")

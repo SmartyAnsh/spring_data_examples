@@ -91,6 +91,7 @@ public class SpringDataApplication implements CommandLineRunner {
 
         //@NamedQuery
         log.info(String.valueOf(personRepository.searchUsingNamedQuery("Bansal")));
+        log.info(String.valueOf(entityManager.createNamedQuery("Person.searchUsingNamedQuery").setParameter(1, "Edison").getResultList()));
 
         log.info(
                 String.valueOf(personRepository
