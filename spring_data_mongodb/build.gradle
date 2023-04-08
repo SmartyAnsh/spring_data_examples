@@ -1,12 +1,12 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.0.2'
+    id 'org.springframework.boot' version '2.7.5'
     id 'io.spring.dependency-management' version '1.1.0'
 }
 
 group = 'com.smartdiscover'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+sourceCompatibility = '11'
 
 repositories {
     mavenCentral()
@@ -19,9 +19,4 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     //implementation 'org.mongodb:mongodb-driver-reactivestreams:4.8.2'
     //implementation 'io.projectreactor:reactor-core:2022.0.4'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
 }
