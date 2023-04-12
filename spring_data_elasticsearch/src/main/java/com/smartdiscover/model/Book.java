@@ -4,8 +4,6 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 
-import java.util.stream.Collectors;
-
 @Data
 @Document(indexName = "educative")
 public class Book {

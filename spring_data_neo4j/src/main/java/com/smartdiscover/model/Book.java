@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
-@Node
+@Node("Book")
 public class Book {
 
     @Id @GeneratedValue

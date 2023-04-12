@@ -1,20 +1,16 @@
 package com.smartdiscover.config;
 
-import org.springframework.data.elasticsearch.client.erhlc.AbstractElasticsearchConfiguration;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.elasticsearch.client.ClientConfiguration;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
 
-/*public class ElasticConfig extends AbstractElasticsearchConfiguration {
+@Configuration
+public class ElasticConfig extends ElasticsearchConfiguration {
 
-    @Bean
     @Override
-    public RestHighLevelClient elasticsearchClient() {
-        ClientConfiguration clientConfiguration = ClientConfiguration.builder()
+    public ClientConfiguration clientConfiguration() {
+        return ClientConfiguration.builder()
                 .connectedTo("localhost:9200")
                 .build();
-
-        return RestClients.create(clientConfiguration)
-                .rest();
     }
-}*/
-public class ElasticConfig {
-
 }

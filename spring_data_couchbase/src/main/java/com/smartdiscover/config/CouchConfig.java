@@ -20,7 +20,7 @@ public class CouchConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     public String getPassword() {
-        return "Viva@2023";
+        return "educative@2023";
     }
 
     @Override
