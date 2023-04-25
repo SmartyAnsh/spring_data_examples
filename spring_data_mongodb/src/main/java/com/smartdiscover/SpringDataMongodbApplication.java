@@ -1,10 +1,13 @@
 package com.smartdiscover;
 
-import com.mongodb.reactivestreams.client.MongoClients;
+import com.mongodb.ClientSessionOptions;
+import com.mongodb.client.MongoClient;
+import com.mongodb.session.ClientSession;
 import com.smartdiscover.document.Author;
 import com.smartdiscover.document.Book;
 import com.smartdiscover.repository.AuthorRepository;
 import com.smartdiscover.repository.BookRepository;
+import com.smartdiscover.repository.ReactiveAuthorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,21 +18,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
 
 import static org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers.endsWith;
 import static org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers.startsWith;
+import static org.springframework.data.mongodb.SessionSynchronization.ALWAYS;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 
@@ -50,10 +60,25 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
     private BookRepository bookRepository;
 
     @Autowired
+    private ReactiveAuthorRepository reactiveAuthorRepository;
+
+    @Autowired
     private MongoTemplate mongoTemplate;
 
     @Autowired
     private MongoOperations mongoOperations;
+
+    @Autowired
+    private MongoClient mongoClient;
+
+    @Autowired
+    private ReactiveMongoTemplate reactiveMongoTemplate;
+
+    @Autowired
+    private ReactiveMongoOperations reactiveMongoOperations;
+
+    @Autowired
+    private MongoTransactionManager mongoTransactionManager;
 
     @Bean
     public AuditorAware<String> auditorProvider() {
@@ -63,12 +88,14 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        log.info(String.valueOf(bookRepository.findAll()));
+        //cleanup
+        bookRepository.deleteAll();
+        authorRepository.deleteAll();
 
         // CRUD started
         Author author = new Author();
-        author.setFirstName("Andy123");
-        author.setLastName("Weir123");
+        author.setFirstName("Andy");
+        author.setLastName("Weir");
         authorRepository.save(author);
 
         log.info(String.valueOf(authorRepository.findAll()));
@@ -95,29 +122,29 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
         // CRUD finished
 
         // Querying documents
-
-        /*BasicQuery query = new BasicQuery("{ name : { $eq : 'Martian' }, dateCreated: {$gt: ISODate(\"2023-03-06\")}}");
+        BasicQuery query = new BasicQuery("{ name : { $eq : 'Martian' }, dateCreated: {$gt: ISODate(\"2023-03-06\")}}");
         List<Book> result = mongoTemplate.find(query, Book.class);
 
         log.info(String.valueOf(result));
 
-        List<Author> result = mongoTemplate.query(Author.class)
+        List<Author> authorList = mongoTemplate.query(Author.class)
                 .matching(query(where("firstName").is("Andy").and("lastName").is("Weir")))
                 .all();
-        log.info(String.valueOf(result));
+        log.info(String.valueOf(authorList));
 
-        List<String> result = mongoTemplate.query(Author.class)
+        List<String> authorLastNames = mongoTemplate.query(Author.class)
                 .distinct("lastName")
                 .as(String.class)
                 .all();
-        log.info(String.valueOf(result));*/
+        log.info(String.valueOf(authorLastNames));
 
-        /*author.setId(null);
-        author.setFirstName("Something");
+        Author newAuthor = new Author();
+        newAuthor.setId(null);
+        newAuthor.setFirstName("Morgan");
+        newAuthor.setLastName("Housel");
+        mongoOperations.insert(newAuthor);
 
-
-        mongoOperations.insert(author);
-        log.info(String.valueOf(mongoOperations.count(query(where("firstName").is("Andy")), Author.class)));
+        log.info(String.valueOf(mongoOperations.count(query(where("firstName").is("Morgan")), Author.class)));
 
         ExampleMatcher matcher = ExampleMatcher.matching()
                 .withMatcher("firstName", endsWith())
@@ -125,22 +152,107 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
         Example<Author> example = Example.of(author, matcher);
 
-        log.info("Example");
+        log.info(String.valueOf(authorRepository.findAll(example)));
 
-        log.info(String.valueOf(authorRepository.findAll(example)));*/
+        //Mongo Sessions
+
+        ClientSessionOptions sessionOptions = ClientSessionOptions.builder().causallyConsistent(true).build();
+
+        ClientSession session = mongoClient.startSession(sessionOptions);
+
+        mongoTemplate.withSession(() -> (com.mongodb.client.ClientSession) session).execute(action -> {
+
+            Query query1 = query(where("firstName").is("Morgan"));
+            Author morganHousel = action.findOne(query1, Author.class);
+
+            List<Author> thePsychologyOfMoneyAuthors = new ArrayList<>();
+            thePsychologyOfMoneyAuthors.add(morganHousel);
+
+            Book thePsychologyOfMoney = new Book();
+            thePsychologyOfMoney.setName("The Psychology of Money");
+            thePsychologyOfMoney.setSummary("Timelines Lessons on Wealth, Greed, and Happiness");
+            thePsychologyOfMoney.setAuthors(thePsychologyOfMoneyAuthors);
+
+            action.insert(thePsychologyOfMoney);
+            return thePsychologyOfMoney;
+        });
+
+        session.close();
+
+        //Mongo Transactions
+
+        /*for transactional start mongodb with --replSet "rs0"
+        example: /usr/bin/mongod --fork --logpath /var/log/mongodb/mongod.log --replSet "rs0" --bind_ip localhost
+        then initiate replica using mongo shell
+        example /usr/bin/mongosh - rs.initiate()*/
+
+        /*
+        ClientSession session1 = mongoClient.startSession(sessionOptions);
+        mongoTemplate.withSession(() -> (com.mongodb.client.ClientSession) session1).execute(action -> {
+
+            ((com.mongodb.client.ClientSession) session1).startTransaction();
+            Book zeroToOne = new Book();
+            try {
+                zeroToOne.setName("Zero to One");
+                zeroToOne.setSummary("Notes on Startups, or How to Build the Future");
+                action.insert(zeroToOne);
+
+                action.updateFirst(query(where("name").is("Zero to One")), Update.update("summary", "Notes on Startups"), Book.class);
+                ((com.mongodb.client.ClientSession) session1).commitTransaction();
+
+            } catch (RuntimeException e) {
+                log.error("something wrong...", e);
+                ((com.mongodb.client.ClientSession) session1).abortTransaction();
+            }
+
+            return zeroToOne;
+
+        }, ClientSession::close);
+
+        log.info(String.valueOf(bookRepository.findAll()));
+
+        mongoTemplate.setSessionSynchronization(ALWAYS);
+        TransactionTemplate txTemplate = new TransactionTemplate(mongoTransactionManager);
+
+        txTemplate.execute(new TransactionCallbackWithoutResult() {
+
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                Book zeroToOne = new Book();
+                zeroToOne.setName("Zero to One");
+                zeroToOne.setSummary("Notes on Startups, or How to Build the Future");
+                mongoTemplate.insert(zeroToOne);
+                mongoTemplate.updateFirst(query(where("name").is("Zero to One")), Update.update("summary", "Notes on Startups"), Book.class);
+            }
+
+            ;
+        });*/
 
         // Reactive
+        Flux<Author> authorFlux = reactiveAuthorRepository.findAll();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        authorFlux.subscribe(author1 -> log.info(author1.toString()));
 
-        ReactiveMongoTemplate mongoOps = new ReactiveMongoTemplate(MongoClients.create(), "spring_data_mongodb");
+        //reactiveMongoTemplate
+        Author ryanHoliday = new Author();
+        ryanHoliday.setFirstName("Ryan");
+        ryanHoliday.setLastName("Holiday");
+        reactiveMongoTemplate.insert(ryanHoliday).subscribe();
 
-        mongoOps.insert(new Author("Anshul", "Bansal"))
-                .flatMap(p -> mongoOps.findOne(new Query(where("name").is("Joe")), Author.class))
+        reactiveMongoTemplate.findOne(new Query(where("firstName").is("Ryan")), Author.class)
                 .doOnNext(a -> log.info(a.toString()))
                 .subscribe();
 
-        latch.await();
+
+        //reactiveMongoOperations
+        Author carmineGallo = new Author();
+        carmineGallo.setFirstName("Carmine");
+        carmineGallo.setLastName("Gallo");
+        reactiveMongoOperations.insert(carmineGallo).subscribe();
+
+        reactiveMongoOperations.findOne(query(where("firstName").is("Carmine")), Author.class)
+                .doOnNext(a -> log.info(a.toString()))
+                .subscribe();
     }
 
 }
