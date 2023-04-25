@@ -34,6 +34,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -253,6 +254,33 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
         reactiveMongoOperations.findOne(query(where("firstName").is("Carmine")), Author.class)
                 .doOnNext(a -> log.info(a.toString()))
                 .subscribe();
+
+        //Mongo auditing
+        Book thinkAgain = new Book();
+        thinkAgain.setName("Think Again");
+        thinkAgain.setSummary("The Power of Knowing What You Don't Know");
+        bookRepository.save(thinkAgain);
+
+        //create
+        Author adamGrant = new Author();
+        adamGrant.setFirstName("Adam");
+        adamGrant.setLastName("Grant");
+        authorRepository.save(adamGrant);
+
+        log.info(String.valueOf(authorRepository.findAll()));
+
+        //make an update after 5 second
+        Thread.sleep(5000);
+
+        //update
+        List<Book> adamGrantBooks = new ArrayList<>();
+        adamGrantBooks.add(thinkAgain);
+
+        adamGrant.setBooks(adamGrantBooks);
+        authorRepository.save(adamGrant);
+
+        log.info(String.valueOf(authorRepository.findAll()));
+
     }
 
 }
