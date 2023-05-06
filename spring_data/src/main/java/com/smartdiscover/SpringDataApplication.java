@@ -2,12 +2,12 @@ package com.smartdiscover;
 
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.smartdiscover.entity.Person;
-import com.smartdiscover.entity.QPerson;
-import com.smartdiscover.entity.events.PersonCreationEvent;
-import com.smartdiscover.repository.CustomPersonRepository;
-import com.smartdiscover.repository.CustomPersonRepositoryImpl;
-import com.smartdiscover.repository.PersonRepository;
+import com.smartdiscover.entity.Customer;
+import com.smartdiscover.entity.QCustomer;
+import com.smartdiscover.entity.events.CustomerCreationEvent;
+import com.smartdiscover.repository.CustomCustomerRepository;
+import com.smartdiscover.repository.CustomCustomerRepositoryImpl;
+import com.smartdiscover.repository.CustomerRepository;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
@@ -30,7 +29,7 @@ public class SpringDataApplication implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(SpringDataApplication.class);
 
     @Autowired
-    private PersonRepository personRepository;
+    private CustomerRepository customerRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -41,108 +40,108 @@ public class SpringDataApplication implements CommandLineRunner {
 
     //manual wiring
     @Bean
-    CustomPersonRepository getCustomPersonRepository() {
-        return new CustomPersonRepositoryImpl();
+    CustomCustomerRepository getCustomCustomerRepository() {
+        return new CustomCustomerRepositoryImpl();
     }
 
     /**
-     * listener method to handle the PersonCreationEvent using the After Commit transaction phase
+     * listener method to handle the CustomerCreationEvent using the After Commit transaction phase
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePersonCreationEvent(PersonCreationEvent event) {
-        log.info("Handled PersonCreationEvent...");
+    public void handleCustomerCreationEvent(CustomerCreationEvent event) {
+        log.info("Handled CustomerCreationEvent...");
     }
 
     @Override
     @Transactional
     public void run(String... strings) throws Exception {
-        Person person1 = new Person();
-        person1.setFirstName("Anshul");
-        person1.setLastName("Bansal");
-        personRepository.save(person1);
+        Customer customer1 = new Customer();
+        customer1.setFirstName("Anshul");
+        customer1.setLastName("Bansal");
+        customerRepository.save(customer1);
 
-        Person person2 = new Person();
-        person2.setFirstName("John");
-        person2.setLastName("Smith");
-        personRepository.save(person2);
+        Customer customer2 = new Customer();
+        customer2.setFirstName("John");
+        customer2.setLastName("Smith");
+        customerRepository.save(customer2);
 
-        Person person3 = new Person();
-        person3.setFirstName("Harry");
-        person3.setLastName("Potter");
-        personRepository.save(person3);
+        Customer customer3 = new Customer();
+        customer3.setFirstName("Harry");
+        customer3.setLastName("Potter");
+        customerRepository.save(customer3);
 
-        Person person4 = new Person();
-        person4.setFirstName("Ronald");
-        person4.setLastName("Weasely");
-        person4.afterSave();
-        personRepository.save(person4);
+        Customer customer4 = new Customer();
+        customer4.setFirstName("Ronald");
+        customer4.setLastName("Weasely");
+        customer4.afterSave();
+        customerRepository.save(customer4);
 
         //dynamic query methods
-        log.info(String.valueOf(personRepository.findAll()));
+        log.info(String.valueOf(customerRepository.findAll()));
 
-        log.info(String.valueOf(personRepository.findAllByFirstName("Anshul")));
+        log.info(String.valueOf(customerRepository.findAllByFirstName("Anshul")));
 
-        log.info(String.valueOf(personRepository.findFirstByLastNameOrderByFirstNameDesc("Weasely").orElse(new Person())));
+        log.info(String.valueOf(customerRepository.findFirstByLastNameOrderByFirstNameDesc("Weasely").orElse(new Customer())));
 
-        log.info(String.valueOf(personRepository.findFirstByOrderByFirstNameAsc()));
+        log.info(String.valueOf(customerRepository.findFirstByOrderByFirstNameAsc()));
 
         //@Query
-        log.info(String.valueOf(personRepository.fetchFirstPersonUsingQuery()));
+        log.info(String.valueOf(customerRepository.fetchFirstCustomerUsingQuery()));
 
         //@NamedQuery
-        log.info(String.valueOf(personRepository.searchUsingNamedQuery("Bansal")));
-        log.info(String.valueOf(entityManager.createNamedQuery("Person.searchUsingNamedQuery").setParameter(1, "Edison").getResultList()));
+        log.info(String.valueOf(customerRepository.searchUsingNamedQuery("Bansal")));
+        log.info(String.valueOf(entityManager.createNamedQuery("Customer.searchUsingNamedQuery").setParameter(1, "Edison").getResultList()));
 
         log.info(
-                String.valueOf(personRepository
+                String.valueOf(customerRepository
                         .readAllByOrderById()
                         .map(i -> i.getLastName() + " " + i.getFirstName())
                         .collect(Collectors.toList())));
 
-        log.info(String.valueOf(personRepository.findPersonCustom("Anshul", "Bansal")));
+        log.info(String.valueOf(customerRepository.findCustomerCustom("Anshul", "Bansal")));
 
-        log.info(String.valueOf(getCustomPersonRepository().findPersonCustom("Anshul", "Bansal")));
+        log.info(String.valueOf(getCustomCustomerRepository().findCustomerCustom("Anshul", "Bansal")));
 
-        log.info(personRepository.findFirstByOrderByFirstNameDesc().getFullName());
-        
-        log.info(personRepository.findFirstByOrderByLastNameAsc().getFirstName());
+        log.info(customerRepository.findFirstByOrderByFirstNameDesc().getFullName());
+
+        log.info(customerRepository.findFirstByOrderByLastNameAsc().getFirstName());
 
         log.info("let's try query dsl");
 
-        QPerson person = QPerson.person;
-        Predicate predicate = person.firstName.equalsIgnoreCase("anshul")
-                .and(person.lastName.startsWithIgnoreCase("Bansal"));
+        QCustomer customer = QCustomer.customer;
+        Predicate predicate = customer.firstName.equalsIgnoreCase("anshul")
+                .and(customer.lastName.startsWithIgnoreCase("Bansal"));
 
-        log.info("Fetched results using PersonRepository and Predicate: " + personRepository.findAll(predicate));
+        log.info("Fetched results using CustomerRepository and Predicate: " + customerRepository.findAll(predicate));
 
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        List<Person> persons = queryFactory.selectFrom(person).where(person.firstName.eq("Anshul")).fetch();
+        List<Customer> customers = queryFactory.selectFrom(customer).where(customer.firstName.eq("Anshul")).fetch();
 
-        log.info("Fetched results using JPAQueryFactory and EntityManager: " + persons);
+        log.info("Fetched results using JPAQueryFactory and EntityManager: " + customers);
 
         // CRUD features
 
         log.info("CRUD features");
 
         //Create
-        Person person5 = new Person();
-        person5.setFirstName("Hormonie");
-        person5.setLastName("Gringer");
-        person5.afterSave();
-        personRepository.save(person5);
+        Customer customer5 = new Customer();
+        customer5.setFirstName("Hormonie");
+        customer5.setLastName("Gringer");
+        customer5.afterSave();
+        customerRepository.save(customer5);
 
         //Read
-        Person p = personRepository.findFirstByLastNameOrderByFirstNameDesc("Gringer").get();
-        log.info(String.valueOf(p));
+        Customer c = customerRepository.findFirstByLastNameOrderByFirstNameDesc("Gringer").get();
+        log.info(String.valueOf(c));
 
         //Update
-        p.setLastName("Gringer1");
-        personRepository.save(p);
-        log.info(String.valueOf(p));
+        c.setLastName("Gringer1");
+        customerRepository.save(c);
+        log.info(String.valueOf(c));
 
         //Delete
-        personRepository.delete(p);
+        customerRepository.delete(c);
     }
 
 }

@@ -1,4 +1,4 @@
 package com.smartdiscover.entity.events;
 
-public class PersonCreationEvent {
+public class CustomerCreationEvent {
 }
