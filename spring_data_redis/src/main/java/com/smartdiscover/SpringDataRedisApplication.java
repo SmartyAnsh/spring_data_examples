@@ -11,15 +11,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.stream.*;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.hash.DecoratingStringHashMapper;
 import org.springframework.data.redis.hash.HashMapper;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @SpringBootApplication
@@ -39,6 +40,9 @@ public class SpringDataRedisApplication implements CommandLineRunner {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private ReactiveRedisTemplate reactiveRedisTemplate;
 
     @Override
     //@Transactional
@@ -130,9 +134,52 @@ public class SpringDataRedisApplication implements CommandLineRunner {
         log.info(String.valueOf(bookHashMapper.fromHash(redisHashOperator.entries("Book" + thePsychologyOfMoney.get("id")))));
 
         //Redis Streams
+        Map numberMap = new HashMap<String, String>();
+
+        //appending
+        int number = 0;
+        for (int i = 0; i < 10; i++) {
+            numberMap.put("num", String.valueOf(i));
+            StringRecord record = StreamRecords.string(numberMap).withStreamKey("number-stream");
+            redisTemplate.opsForStream().add(record);
+            number = i;
+        }
+
+        //consuming
+        if (redisTemplate.opsForStream().groups("number-stream").isEmpty()) {
+            redisTemplate.opsForStream().createGroup("number-stream", ReadOffset.from("0"), "my-consumer-group");
+        }
+        List messages = redisTemplate.opsForStream().read(Consumer.from("my-consumer-group", "my-consumer"),
+                StreamReadOptions.empty().count(2), StreamOffset.create("number-stream", ReadOffset.lastConsumed()));
+
+        log.info(String.valueOf(messages));
+
+        List<MapRecord> messages1 = redisTemplate.opsForStream().read(Consumer.from("my-consumer-group", "my-consumer"),
+                StreamReadOptions.empty().count(3), StreamOffset.create("number-stream", ReadOffset.lastConsumed()));
+
+        redisTemplate.opsForStream().acknowledge("number-stream", "my-consumer-group", messages1.get(0).getId());
 
         //Redis Transactions
+        redisTemplate.setEnableTransactionSupport(true);
+
+        //execute a transaction
+        List<Object> txResults = (List<Object>) redisTemplate.execute(new SessionCallback<List<Object>>() {
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                operations.multi();
+                operations.opsForSet().add("key", "value1");
+                operations.opsForSet().add("key1", "value2");
+
+                // This will contain the results of all operations in the transaction
+                return operations.exec();
+            }
+        });
+        log.info("Number of items added to set: " + txResults.size());
 
         //Reactive Redis
+
+        reactiveRedisTemplate.opsForValue().set("Netherlands", "Amsterdam").subscribe();
+
+        log.info(String.valueOf(reactiveRedisTemplate.hasKey("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe()));
+        reactiveRedisTemplate.opsForValue().get("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();
     }
 }
