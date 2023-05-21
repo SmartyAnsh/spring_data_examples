@@ -179,7 +179,7 @@ public class SpringDataRedisApplication implements CommandLineRunner {
 
         reactiveRedisTemplate.opsForValue().set("Netherlands", "Amsterdam").subscribe();
 
-        log.info(String.valueOf(reactiveRedisTemplate.hasKey("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe()));
+        reactiveRedisTemplate.hasKey("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();
         reactiveRedisTemplate.opsForValue().get("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();
     }
 }
