@@ -10,14 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @SpringBootApplication
+@EnableJpaAuditing
 public class SpringDataJpaApplication implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SpringDataJpaApplication.class);
@@ -34,6 +39,11 @@ public class SpringDataJpaApplication implements CommandLineRunner {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Bean
+    AuditorAware<String> auditorProvider() {
+        return () -> Optional.of("Administrator");
+    }
 
     @Override
     @Transactional
@@ -75,5 +85,7 @@ public class SpringDataJpaApplication implements CommandLineRunner {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("select * from book_authors");
 
         log.info(String.valueOf(rows));
+        // stored procedures
+
     }
 }
