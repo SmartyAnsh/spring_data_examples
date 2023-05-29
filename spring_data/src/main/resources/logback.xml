@@ -9,12 +9,11 @@
         </layout>
     </appender>
 
-    <!-- LOG everything at INFO level -->
-    <root level="info">
+    <logger name="org.hibernate.SQL" level="debug" additivity="false">
         <appender-ref ref="Console" />
-    </root>
+    </logger>
 
-    <logger name="com.smartdiscover" level="debug" additivity="false">
+    <logger name="com.smartdiscover" level="info" additivity="false">
         <appender-ref ref="Console" />
     </logger>
 
