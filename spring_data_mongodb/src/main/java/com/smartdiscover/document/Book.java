@@ -1,9 +1,7 @@
 package com.smartdiscover.document;
 
 import lombok.Data;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.*;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -22,14 +20,20 @@ public class Book {
 
     private String summary;
 
-    @DBRef
-    private List<Author> authors;
-
-    @CreatedDate
-    private Date dateCreated;
-
     @CreatedBy
     private String createdBy;
+
+    @CreatedDate
+    private Date createdDate;
+
+    @LastModifiedBy
+    private String lastModifiedBy;
+
+    @LastModifiedDate
+    private Date lastModifiedDate;
+
+    @DBRef
+    private List<Author> authors;
 
     @Override
     public String toString() {
@@ -38,6 +42,10 @@ public class Book {
                 ", name='" + name + '\'' +
                 ", summary='" + summary + '\'' +
                 ((null != authors) ? ", authors=" + authors.stream().map(i -> i.getFirstName()).collect(Collectors.toList()) + '\'' : "") +
+                ", createdBy='" + createdBy + '\'' +
+                ", createdDate='" + createdDate + '\'' +
+                ", lastModifiedBy='" + lastModifiedBy + '\'' +
+                ", lastModifiedDate='" + lastModifiedDate + '\'' +
                 '}';
     }
 }

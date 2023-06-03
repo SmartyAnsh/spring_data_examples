@@ -87,7 +87,7 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
+    //@Transactional
     public void run(String... args) throws Exception {
         //cleanup
         bookRepository.deleteAll();

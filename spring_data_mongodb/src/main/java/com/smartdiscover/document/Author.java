@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,13 +28,13 @@ public class Author {
     private String createdBy;
 
     @CreatedDate
-    private Instant createdAt;
+    private Date createdDate;
 
     @LastModifiedBy
-    private String updatedBy;
+    private String lastModifiedBy;
 
     @LastModifiedDate
-    private Instant updatedAt;
+    private Date lastModifiedDate;
 
     @Override
     public String toString() {
@@ -43,9 +44,9 @@ public class Author {
                 ", lastName='" + lastName + '\'' +
                 ((null != books) ? ", books=" + books.stream().map(i -> i.getName()).collect(Collectors.toList()) + '\'' : "") +
                 ", createdBy='" + createdBy + '\'' +
-                ", createdAt='" + createdAt + '\'' +
-                ", updatedBy='" + updatedBy + '\'' +
-                ", updatedAt='" + updatedAt + '\'' +
+                ", createdDate='" + createdDate + '\'' +
+                ", lastModifiedBy='" + lastModifiedBy + '\'' +
+                ", lastModifiedDate='" + lastModifiedDate + '\'' +
                 '}';
     }
 
