@@ -49,7 +49,7 @@ public class Book {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", summary='" + summary + '\'' +
-                ", authors='" + authors.stream().map(i -> i.getFullName()).collect(Collectors.toList()) + '\'' +
+                ", authors='" + (null != authors && authors.size() > 0 ? (authors.stream().map(i -> i.getFullName()).collect(Collectors.toList())) : "[]") + '\'' +
                 ", createdBy='" + createdBy + '\'' +
                 ", createdDate='" + createdDate + '\'' +
                 ", lastModifiedBy='" + lastModifiedBy + '\'' +

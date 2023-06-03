@@ -85,7 +85,27 @@ public class SpringDataJpaApplication implements CommandLineRunner {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("select * from book_authors");
 
         log.info(String.valueOf(rows));
+
         // stored procedures
+
+        //transactions
+
+        //auditing
+        log.info("insert book and author using Jdbc repositories");
+
+        Book martian = new Book();
+        martian.setName("Martian");
+        martian.setSummary("After a dust storm nearly kills him and forces his crew to evacuate while thinking him dead.");
+        bookRepository.save(martian);
+
+        Author andyWeir = new Author();
+        andyWeir.setFirstName("Andy");
+        andyWeir.setLastName("Weir");
+        authorRepository.save(andyWeir);
+
+        log.info(String.valueOf(bookRepository.findById(103L)));
+
+        log.info(String.valueOf(authorRepository.findById(54L)));
 
     }
 }
