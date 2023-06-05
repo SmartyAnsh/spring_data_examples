@@ -9,10 +9,9 @@
         </layout>
     </appender>
 
-    <!-- LOG everything at INFO level -->
-    <root level="info">
+    <logger name="org.springframework.data.mongodb.core" level="debug" additivity="false">
         <appender-ref ref="Console" />
-    </root>
+    </logger>
 
     <logger name="com.smartdiscover" level="debug" additivity="false">
         <appender-ref ref="Console" />
