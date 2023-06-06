@@ -20,7 +20,6 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
-import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
@@ -65,9 +64,6 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
     @Autowired
     private MongoTemplate mongoTemplate;
-
-    @Autowired
-    private MongoOperations mongoOperations;
 
     @Autowired
     private MongoClient mongoClient;
@@ -143,9 +139,9 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
         newAuthor.setId(null);
         newAuthor.setFirstName("Morgan");
         newAuthor.setLastName("Housel");
-        mongoOperations.insert(newAuthor);
+        mongoTemplate.insert(newAuthor);
 
-        log.info(String.valueOf(mongoOperations.count(query(where("firstName").is("Morgan")), Author.class)));
+        log.info(String.valueOf(mongoTemplate.count(query(where("firstName").is("Morgan")), Author.class)));
 
         ExampleMatcher matcher = ExampleMatcher.matching()
                 .withMatcher("firstName", endsWith())
