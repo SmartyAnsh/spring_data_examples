@@ -170,19 +170,19 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
         mongoTemplate.withSession(() -> (com.mongodb.client.ClientSession) session).execute(action -> {
 
-            Query query1 = query(where("firstName").is("Morgan"));
-            Author morganHousel = action.findOne(query1, Author.class);
+            Query query1 = query(where("firstName").is("Andy"));
+            Author andyWeir = action.findOne(query1, Author.class);
 
-            List<Author> thePsychologyOfMoneyAuthors = new ArrayList<>();
-            thePsychologyOfMoneyAuthors.add(morganHousel);
+            List<Author> projectHailMaryAuthors = new ArrayList<>();
+            projectHailMaryAuthors.add(andyWeir);
 
-            Book thePsychologyOfMoney = new Book();
-            thePsychologyOfMoney.setName("The Psychology of Money");
-            thePsychologyOfMoney.setSummary("Timelines Lessons on Wealth, Greed, and Happiness");
-            thePsychologyOfMoney.setAuthors(thePsychologyOfMoneyAuthors);
+            Book projectHailMary = new Book();
+            projectHailMary.setName("Project Hail Mary");
+            projectHailMary.setSummary("It's a simple idea, but also stupid. Thing is, when stupid ideas work, they become genius ideas. We'll see which way this one falls.");
+            projectHailMary.setAuthors(projectHailMaryAuthors);
 
-            action.insert(thePsychologyOfMoney);
-            return thePsychologyOfMoney;
+            action.insert(projectHailMary);
+            return projectHailMary;
         });
 
         session.close();
