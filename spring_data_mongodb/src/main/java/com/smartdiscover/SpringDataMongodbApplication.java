@@ -24,6 +24,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
@@ -121,11 +122,6 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
         // Querying documents
 
-        //using mongoRepository
-        log.info("Querying documents using MongoRepository");
-        log.info(String.valueOf(bookRepository.findFirstByName("Martian")));
-        log.info(String.valueOf(bookRepository.findAllByName("Martian")));
-
         log.info("Querying documents using MongoTemplate");
         //Using Query
         Query query = query(where("firstName").is("Morgan"));
@@ -138,8 +134,9 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
         log.info(String.valueOf(martian));
 
         //Using Criteria
+        Criteria c = where("firstName").is("Andy").and("lastName").is("Weir");
         List<Author> authorList = mongoTemplate.query(Author.class)
-                .matching(query(where("firstName").is("Andy").and("lastName").is("Weir")))
+                .matching(query(c))
                 .all();
         log.info(String.valueOf(authorList));
 
@@ -149,7 +146,12 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
                 .all();
         log.info(String.valueOf(authorLastNames));
 
-        log.info(String.valueOf(mongoTemplate.count(query(where("firstName").is("Morgan")), Author.class)));
+        log.info(String.valueOf(mongoTemplate.count(query(c), Author.class)));
+
+        //using mongoRepository
+        log.info("Querying documents using MongoRepository");
+        log.info(String.valueOf(bookRepository.findFirstByName("Martian")));
+        log.info(String.valueOf(bookRepository.findAllByName("Martian")));
 
         //Using Example
         ExampleMatcher matcher = ExampleMatcher.matching()
