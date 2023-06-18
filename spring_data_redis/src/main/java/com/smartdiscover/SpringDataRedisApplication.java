@@ -18,31 +18,24 @@ import org.springframework.data.redis.hash.DecoratingStringHashMapper;
 import org.springframework.data.redis.hash.HashMapper;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SpringBootApplication
 public class SpringDataRedisApplication implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SpringDataRedisApplication.class);
+    @Autowired
+    private BookRepository bookRepository;
+    @Autowired
+    private AuthorRepository authorRepository;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private ReactiveRedisTemplate reactiveRedisTemplate;
 
     public static void main(String[] args) {
         SpringApplication.run(SpringDataRedisApplication.class, args);
     }
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private AuthorRepository authorRepository;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
-    private ReactiveRedisTemplate reactiveRedisTemplate;
 
     @Override
     //@Transactional
@@ -89,38 +82,58 @@ public class SpringDataRedisApplication implements CommandLineRunner {
 
         // CRUD finished
 
-        //redisTemplate
+        //set the String serializer for key and value
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new StringRedisSerializer());
 
         //string operations
-        redisTemplate.opsForValue().set("Romania", "Bucharest");
+        redisTemplate.opsForValue().set("Book", "Author");
 
-        log.info(String.valueOf(redisTemplate.hasKey("Romania")));
-        log.info(String.valueOf(redisTemplate.opsForValue().get("Romania")));
+        log.info(String.valueOf(redisTemplate.hasKey("Book")));
+        log.info(String.valueOf(redisTemplate.opsForValue().get("Book")));
 
-        //list operations
-
+        //list operator
         ListOperations redisListOperator = redisTemplate.opsForList();
 
-        redisListOperator.rightPush("India", "Delhi");
-        redisListOperator.rightPush("India", "Mumbai");
-        redisListOperator.rightPush("India", "Chennai");
-        redisListOperator.rightPush("India", "Kolkata");
+        //list operations
+        redisListOperator.rightPush("BookList", "Atomic Habits");
+        redisListOperator.rightPush("BookList", "Martian");
+        redisListOperator.rightPush("BookList", "The Psychology Of Money");
+        redisListOperator.rightPush("BookList", "Zero To One");
 
-        log.info(String.valueOf(redisTemplate.hasKey("India")));
-        log.info(String.valueOf(redisListOperator.size("India")));
-        log.info(String.valueOf(redisListOperator.index("India", 1)));
+        log.info(String.valueOf(redisTemplate.hasKey("BookList")));
+        log.info(String.valueOf(redisListOperator.size("BookList")));
+        log.info(String.valueOf(redisListOperator.index("BookList", 1)));
+        log.info(String.valueOf(redisListOperator.range("BookList", 2, 3)));
 
-        redisListOperator.set("India", 1, "Bangalore");
-        log.info(String.valueOf(redisListOperator.index("India", 1)));
+        redisListOperator.set("BookList", 1, "Project Hail Mary");
+        log.info(String.valueOf(redisListOperator.index("BookList", 1)));
 
-        //hash operations
+        //set operator
+        SetOperations redisSetOperator = redisTemplate.opsForSet();
+
+        //set operations
+        redisSetOperator.add("BookSet", "Atomic Habits", "Martian", "The Psychology Of Money", "Leaders eat last");
+
+        log.info(String.valueOf(redisSetOperator.size("BookSet")));
+
+        log.info(String.valueOf(redisSetOperator.isMember("BookSet", "Martian")));
+        log.info(String.valueOf(redisSetOperator.isMember("BookSet", "Zero To One")));
+
+        log.info(redisSetOperator.members("BookSet").toString());
+
+        redisSetOperator.remove("BookSet", "Martian");
+
+        log.info(redisSetOperator.members("BookSet").toString());
+
+        //set the String serializer for Hash key and value
         redisTemplate.setHashKeySerializer(new StringRedisSerializer());
         redisTemplate.setHashValueSerializer(new StringRedisSerializer());
 
+        //Hash operator
         HashOperations redisHashOperator = redisTemplate.opsForHash();
 
+        //Hash operations
         Map thePsychologyOfMoney = new HashMap<String, String>();
         thePsychologyOfMoney.put("id", "thePsychologyOfMoney");
         thePsychologyOfMoney.put("name", "The Psychology of Money");
@@ -134,46 +147,73 @@ public class SpringDataRedisApplication implements CommandLineRunner {
         log.info(String.valueOf(bookHashMapper.fromHash(redisHashOperator.entries("Book" + thePsychologyOfMoney.get("id")))));
 
         //Redis Streams
-        Map numberMap = new HashMap<String, String>();
 
-        //appending
-        int number = 0;
-        for (int i = 0; i < 10; i++) {
-            numberMap.put("num", String.valueOf(i));
-            StringRecord record = StreamRecords.string(numberMap).withStreamKey("number-stream");
-            redisTemplate.opsForStream().add(record);
-            number = i;
+        String streamKey = "bookStream";
+        String consumerGroupKey = "educativeGroup";
+        String consumerNameKey = "educativeConsumer";
+        List<String> books = Arrays.asList("Martian", "Atomic Habits", "The Psychology Of Money", "Project Hail Mary", "Zero To One");
+
+        StreamOperations redisStreamOperator = redisTemplate.opsForStream();
+
+        for (int i = 0; i < books.size(); i++) {
+            Map bookMap = new HashMap<String, String>();
+            bookMap.put("book", books.get(i));
+
+            //appending
+            StringRecord record = StreamRecords.string(bookMap).withStreamKey(streamKey);
+            redisStreamOperator.add(record);
         }
 
-        //consuming
-        if (redisTemplate.opsForStream().groups("number-stream").isEmpty()) {
-            redisTemplate.opsForStream().createGroup("number-stream", ReadOffset.from("0"), "my-consumer-group");
-        }
-        List messages = redisTemplate.opsForStream().read(Consumer.from("my-consumer-group", "my-consumer"),
-                StreamReadOptions.empty().count(2), StreamOffset.create("number-stream", ReadOffset.lastConsumed()));
+        Consumer educativeConsumer = Consumer.from(consumerGroupKey, consumerNameKey);
+        StreamReadOptions readOptions = StreamReadOptions.empty();
+        StreamOffset streamOffset = StreamOffset.create(streamKey, ReadOffset.lastConsumed());
+        ReadOffset readOffset = ReadOffset.from("0-0");
 
+        //create group if it doesn't exist
+        if (redisStreamOperator.groups(streamKey).isEmpty()) {
+            redisStreamOperator.createGroup(streamKey, readOffset, consumerGroupKey);
+        }
+
+        //synchronous read
+        List<MapRecord> messages = redisStreamOperator.read(educativeConsumer, readOptions.count(2), streamOffset);
         log.info(String.valueOf(messages));
 
-        List<MapRecord> messages1 = redisTemplate.opsForStream().read(Consumer.from("my-consumer-group", "my-consumer"),
-                StreamReadOptions.empty().count(3), StreamOffset.create("number-stream", ReadOffset.lastConsumed()));
+        //acknowledge the message
+        messages.forEach(map -> {
+            redisStreamOperator.acknowledge(streamKey, consumerGroupKey, map.getId());
+        });
 
-        redisTemplate.opsForStream().acknowledge("number-stream", "my-consumer-group", messages1.get(0).getId());
+        //read again from the last consumed
+        messages = redisStreamOperator.read(educativeConsumer, readOptions.count(2), streamOffset);
+        log.info(String.valueOf(messages));
 
         //Redis Transactions
+        log.info("starting Redis transactions...");
         redisTemplate.setEnableTransactionSupport(true);
 
+        RedisOperations<String, String> redisOperations = redisTemplate.opsForValue().getOperations();
         //execute a transaction
-        List<Object> txResults = (List<Object>) redisTemplate.execute(new SessionCallback<List<Object>>() {
-            public List<Object> execute(RedisOperations operations) throws DataAccessException {
-                operations.multi();
-                operations.opsForSet().add("key", "value1");
-                operations.opsForSet().add("key1", "value2");
+        SessionCallback<Object> sessionCallback = new SessionCallback<Object>() {
+            @Override
+            public Object execute(RedisOperations operations) throws DataAccessException {
 
-                // This will contain the results of all operations in the transaction
+                //invoke redis multi command
+                operations.multi();
+
+                ValueOperations<String, String> valueOps = operations.opsForValue();
+                valueOps.set("book1", "Martian");
+                valueOps.set("book2", "Atomic Habits");
+                valueOps.increment("book3", 1);
+
+                //invoke redis exec command
                 return operations.exec();
             }
-        });
-        log.info("Number of items added to set: " + txResults.size());
+        };
+
+        redisOperations.execute(sessionCallback);
+        log.info(String.valueOf(redisOperations.opsForValue().get("book1")));
+        log.info(String.valueOf(redisOperations.opsForValue().get("book2")));
+        log.info(String.valueOf(redisOperations.opsForValue().get("book3")));
 
         //Reactive Redis
 

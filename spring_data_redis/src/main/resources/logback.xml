@@ -8,6 +8,10 @@
             </Pattern>
         </layout>
     </appender>
+    <!-- LOG everything at INFO level -->
+    <root level="info">
+        <appender-ref ref="Console" />
+    </root>
 
     <logger name="com.smartdiscover" level="debug" additivity="false">
         <appender-ref ref="Console" />
