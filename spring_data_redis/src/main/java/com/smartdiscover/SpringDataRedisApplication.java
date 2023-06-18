@@ -4,6 +4,7 @@ import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
 import com.smartdiscover.repository.AuthorRepository;
 import com.smartdiscover.repository.BookRepository;
+import com.smartdiscover.service.EducativeMessagePubSub;
 import com.smartdiscover.util.PojoHashMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,11 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.hash.DecoratingStringHashMapper;
 import org.springframework.data.redis.hash.HashMapper;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.*;
@@ -24,17 +28,32 @@ import java.util.*;
 public class SpringDataRedisApplication implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SpringDataRedisApplication.class);
+
     @Autowired
     private BookRepository bookRepository;
+
     @Autowired
     private AuthorRepository authorRepository;
+
     @Autowired
     private RedisTemplate redisTemplate;
+
     @Autowired
     private ReactiveRedisTemplate reactiveRedisTemplate;
 
+    @Autowired
+    private EducativeMessagePubSub publisherSubscriber;
+
     public static void main(String[] args) {
         SpringApplication.run(SpringDataRedisApplication.class, args);
+    }
+
+    @Bean
+    public RedisMessageListenerContainer redisMessageListenerContainer() {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisTemplate.getConnectionFactory());
+        container.addMessageListener(publisherSubscriber, new ChannelTopic("educative:queue"));
+        return container;
     }
 
     @Override
@@ -145,6 +164,9 @@ public class SpringDataRedisApplication implements CommandLineRunner {
 
         HashMapper<Book, String, String> bookHashMapper = new DecoratingStringHashMapper<>(new PojoHashMapper<>(Book.class));
         log.info(String.valueOf(bookHashMapper.fromHash(redisHashOperator.entries("Book" + thePsychologyOfMoney.get("id")))));
+
+        //Redis messaging
+        publisherSubscriber.publishMessage("educative:queue", "hello there");
 
         //Redis Streams
 
