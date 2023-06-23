@@ -3,35 +3,36 @@ package com.smartdiscover.model;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.couchbase.core.mapping.Document;
-import org.springframework.data.couchbase.core.mapping.Field;
 import org.springframework.data.couchbase.core.mapping.id.GeneratedValue;
 import org.springframework.data.couchbase.core.mapping.id.GenerationStrategy;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Document
-public class Book {
+public class Author {
 
     @Id
     @GeneratedValue(strategy = GenerationStrategy.UNIQUE)
     private String id;
+    private String firstName;
+    private String lastName;
 
-    @Field
-    private String name;
+    private List<Book> books;
 
-    @Field
-    private String summary;
-
-    @Field
-    private List<Author> authors;
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
 
     @Override
     public String toString() {
-        return "Book{" +
+        return "Author{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", summary='" + summary + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ((null != books) ? ", books=" + books.stream().map(i -> i.getName()).collect(Collectors.toList()) + '\'' : "") +
                 '}';
     }
+
 }

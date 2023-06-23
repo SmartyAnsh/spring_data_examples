@@ -3,9 +3,13 @@ package com.smartdiscover.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
+import org.springframework.data.couchbase.repository.config.EnableReactiveCouchbaseRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 @EnableCouchbaseRepositories(basePackages={"com.smartdiscover.repository"})
+@EnableReactiveCouchbaseRepositories(basePackages={"com.smartdiscover.repository"})
+//@EnableTransactionManagement
 public class CouchConfig extends AbstractCouchbaseConfiguration {
 
     @Override
