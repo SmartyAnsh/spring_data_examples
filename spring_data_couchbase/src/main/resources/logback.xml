@@ -9,12 +9,15 @@
         </layout>
     </appender>
 
-    <!-- LOG everything at INFO level -->
-    <root level="info">
+    <root level="error">
         <appender-ref ref="Console" />
     </root>
 
-    <logger name="com.smartdiscover" level="debug" additivity="false">
+    <logger name="com.couchbase.core" level="info" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
+    <logger name="com.smartdiscover" level="info" additivity="false">
         <appender-ref ref="Console" />
     </logger>
 
