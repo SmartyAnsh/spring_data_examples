@@ -13,11 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.couchbase.core.CouchbaseTemplate;
 import org.springframework.data.couchbase.core.ExecutableFindByQueryOperation;
 import org.springframework.data.couchbase.core.ReactiveCouchbaseTemplate;
 import org.springframework.data.couchbase.core.query.Query;
 import org.springframework.data.couchbase.core.query.QueryCriteria;
+import org.springframework.data.couchbase.repository.auditing.EnableCouchbaseAuditing;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 @SpringBootApplication
+@EnableCouchbaseAuditing
 //@Transactional
 public class SpringDataCouchbaseApplication implements CommandLineRunner {
 
@@ -53,6 +57,11 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
     @Autowired
     private ReactiveCouchbaseTemplate reactiveCouchbaseTemplate;
 
+    @Bean
+    AuditorAware<String> auditorProvider() {
+        return () -> Optional.of("Admin");
+    }
+
     @Override
     public void run(String... args) throws Exception {
         //cleanup
@@ -68,7 +77,7 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
         authorRepository.save(andyWeir);
 
         //read author
-        log.info(String.valueOf(authorRepository.findAll()));
+        log.info(String.valueOf(authorRepository.findAll(QueryScanConsistency.REQUEST_PLUS)));
 
         ArrayList<Author> martianAuthors = new ArrayList<>();
         martianAuthors.add(andyWeir);
@@ -80,20 +89,20 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
         bookRepository.save(martian);
 
         //read book
-        log.info(String.valueOf(bookRepository.findAll()));
+        log.info(String.valueOf(bookRepository.findAll(QueryScanConsistency.REQUEST_PLUS)));
 
         //update book
         martian.setAuthors(martianAuthors);
         bookRepository.save(martian);
 
         //read book
-        log.info(String.valueOf(bookRepository.findAll()));
+        log.info(String.valueOf(bookRepository.findAll(QueryScanConsistency.REQUEST_PLUS)));
 
         //delete author
         //authorRepository.delete(andyWeir);
 
         //read author
-        log.info(String.valueOf(authorRepository.findAll()));
+        log.info(String.valueOf(authorRepository.findAll(QueryScanConsistency.REQUEST_PLUS)));
 
         // CRUD finished
 
@@ -119,6 +128,36 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
 
 
         //transactions
+
+        //auditing
+
+        Book zeroToOne = new Book();
+        zeroToOne.setName("Zero to One");
+        zeroToOne.setSummary("Notes on Startups, or How to Build the Future");
+        bookRepository.save(zeroToOne);
+
+        Author peterThiel = new Author();
+        peterThiel.setFirstName("Peter");
+        peterThiel.setLastName("Thiel");
+        authorRepository.save(peterThiel);
+
+        log.info(String.valueOf(bookRepository.findById(zeroToOne.getId())));
+
+        log.info(String.valueOf(authorRepository.findById(peterThiel.getId())));
+
+        log.info(String.valueOf(authorRepository.findAll()));
+
+        //make an update after 5 second
+        Thread.sleep(5000);
+
+        //update
+        List<Book> peterThielBooks = new ArrayList<>();
+        peterThielBooks.add(zeroToOne);
+
+        peterThiel.setBooks(peterThielBooks);
+        authorRepository.save(peterThiel);
+
+        log.info(String.valueOf(authorRepository.findById(peterThiel.getId())));
 
         //reactive couchbase
         log.info("reactive couchbase");
