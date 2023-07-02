@@ -14,7 +14,8 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-couchbase'
-    //implementation 'org.springframework.boot:spring-boot-starter-data-couchbase-reactive'
+    implementation 'org.springframework.boot:spring-boot-starter-data-couchbase-reactive'
+    implementation 'com.couchbase.client:couchbase-transactions:1.2.4'
     implementation 'org.projectlombok:lombok:1.18.26'
     annotationProcessor 'org.projectlombok:lombok'
 }

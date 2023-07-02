@@ -1,6 +1,7 @@
 package com.smartdiscover;
 
 import com.couchbase.client.java.query.QueryScanConsistency;
+import com.couchbase.transactions.Transactions;
 import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
 import com.smartdiscover.repository.AuthorRepository;
@@ -14,30 +15,32 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.couchbase.CouchbaseClientFactory;
 import org.springframework.data.couchbase.core.CouchbaseTemplate;
-import org.springframework.data.couchbase.core.ExecutableFindByQueryOperation;
 import org.springframework.data.couchbase.core.ReactiveCouchbaseTemplate;
-import org.springframework.data.couchbase.core.query.Query;
-import org.springframework.data.couchbase.core.query.QueryCriteria;
 import org.springframework.data.couchbase.repository.auditing.EnableCouchbaseAuditing;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.springframework.data.couchbase.core.query.QueryCriteria.where;
+
 @SpringBootApplication
 @EnableCouchbaseAuditing
-//@Transactional
 public class SpringDataCouchbaseApplication implements CommandLineRunner {
 
-    public static void main(String[] args) {
-        SpringApplication.run(SpringDataCouchbaseApplication.class, args);
-    }
-
     private static final Logger log = LoggerFactory.getLogger(SpringDataCouchbaseApplication.class);
+
+    @Autowired
+    Transactions transactions;
+
+    @Autowired
+    CouchbaseClientFactory couchbaseClientFactory;
 
     @Autowired
     private BookRepository bookRepository;
@@ -57,12 +60,17 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
     @Autowired
     private ReactiveCouchbaseTemplate reactiveCouchbaseTemplate;
 
+    public static void main(String[] args) {
+        SpringApplication.run(SpringDataCouchbaseApplication.class, args);
+    }
+
     @Bean
     AuditorAware<String> auditorProvider() {
         return () -> Optional.of("Admin");
     }
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         //cleanup
         bookRepository.deleteAll();
@@ -120,14 +128,27 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
         Author found1 = couchbaseTemplate.findById(Author.class).one(morganHousel.getId());
         log.info(String.valueOf(found1));
 
+        //findByQuery
+        List<Author> authorList = couchbaseTemplate.findByQuery(Author.class).matching(where("firstName").is("Morgan")).all();
+        log.info(String.valueOf(authorList));
+
         // Retrieve all authors
         List<Author> authors = couchbaseTemplate.findByQuery(Author.class)
                 .consistentWith(QueryScanConsistency.REQUEST_PLUS)
                 .all();
         log.info(String.valueOf(authors));
 
+        Author jkRowling = new Author();
+        jkRowling.setId("jkRowling");
+        jkRowling.setFirstName("Joanne");
+        jkRowling.setLastName("Rowling");
 
         //transactions
+        transactions.run(ctx -> {
+            ctx.insert(couchbaseClientFactory.getDefaultCollection(), jkRowling.getId(), jkRowling);
+            ctx.rollback();
+        });
+        log.info(String.valueOf(couchbaseTemplate.findById(Author.class).one(jkRowling.getId())));
 
         //auditing
 
@@ -160,21 +181,26 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
         log.info(String.valueOf(authorRepository.findById(peterThiel.getId())));
 
         //reactive couchbase
-        log.info("reactive couchbase");
+
+        //create Author object and save using reactiveAuthorRepository
+        Author andyWeir1 = new Author();
+        andyWeir1.setFirstName("Andy");
+        andyWeir1.setLastName("Weir");
+        reactiveAuthorRepository.save(andyWeir1).subscribe();
+
+        //find all authors using reactiveAuthorRepository
+        log.info("read all authors using ReactiveAuthorRepository");
+        String[] ids = {andyWeir1.getId()};
+        Flux<Author> authorFlux = reactiveAuthorRepository.findAllById(Arrays.asList(ids));
+        authorFlux.subscribe(author1 -> log.info(author1.toString()));
 
         Author pauloCoelho = new Author();
         pauloCoelho.setFirstName("Paulo");
         pauloCoelho.setLastName("Coelho");
-        reactiveAuthorRepository.save(pauloCoelho).subscribe();
-
-        //authorRepository.findAll(QueryScanConsistency.REQUEST_PLUS);
-
-        //reactiveAuthorRepository.findAll().doOnNext(a -> log.info(a.toString())).subscribe();
+        reactiveCouchbaseTemplate.upsertById(Author.class).one(pauloCoelho).subscribe();
 
         reactiveCouchbaseTemplate.findByQuery(Author.class)
                 .all().doOnNext(a -> log.info(a.toString())).subscribe();
-
-
 
     }
 }
