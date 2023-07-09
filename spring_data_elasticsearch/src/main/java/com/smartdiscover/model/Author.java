@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Data
-@Document(indexName = "book")
-public class Book {
+@Document(indexName = "author")
+public class Author {
 
     @Id
     private String id;
 
-    private String name;
+    private String firstName;
 
-    private String summary;
+    private String lastName;
 
     @CreatedBy
     private String createdBy;
@@ -31,19 +31,33 @@ public class Book {
     @LastModifiedDate
     private Date dateUpdated;
 
-    private List<Author> authors;
+    private List<Book> books;
+
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
 
     @Override
     public String toString() {
-        return "Book{" +
+        return "Author{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", summary='" + summary + '\'' +
-                ((null != authors) ? ", authors=" + authors.stream().map(i -> i.getFullName()).collect(Collectors.toList()) + '\'' : "") +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ((null != books) ? ", books=" + books.stream().map(i -> i.getName()).collect(Collectors.toList()) + '\'' : "") +
                 ", createdBy='" + createdBy + '\'' +
                 ", dateCreated='" + dateCreated + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +
                 ", dateUpdated='" + dateUpdated +
                 '}';
     }
+
+    public Author() {
+
+    }
+
+    public Author(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
 }

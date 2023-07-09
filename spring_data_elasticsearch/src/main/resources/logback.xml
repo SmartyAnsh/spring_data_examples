@@ -9,6 +9,8 @@
         </layout>
     </appender>
 
+    <logger name="tracer" level="trace"/>
+
     <!-- LOG everything at INFO level -->
     <root level="info">
         <appender-ref ref="Console" />
