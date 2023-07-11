@@ -4,6 +4,8 @@ import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
 import com.smartdiscover.repositories.AuthorRepository;
 import com.smartdiscover.repositories.BookRepository;
+import com.smartdiscover.repositories.ReactiveAuthorRepository;
+import com.smartdiscover.repositories.ReactiveBookRepository;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import org.springframework.data.elasticsearch.core.query.Query;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +53,12 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired
+    private ReactiveBookRepository reactiveBookRepository;
+
+    @Autowired
+    private ReactiveAuthorRepository reactiveAuthorRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(SpringDataElasticsearchApplication.class, args);
@@ -170,6 +179,17 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
 
         //reactive elasticsearch
 
+        //create Author object and save using reactiveAuthorRepository
+        Author andyWeir1 = new Author();
+        andyWeir1.setFirstName("Andy");
+        andyWeir1.setLastName("Weir");
+        reactiveAuthorRepository.save(andyWeir1).subscribe();
+
+        //find all authors using reactiveAuthorRepository
+        log.info("read all authors using ReactiveAuthorRepository");
+        String[] ids = {andyWeir1.getId()};
+        Flux<Author> authorFlux = reactiveAuthorRepository.findAllById(Arrays.asList(ids));
+
         //create Author object and save using reactiveElasticsearchOperations
         Author pauloCoelho = new Author();
         pauloCoelho.setFirstName("Paulo");
@@ -184,8 +204,8 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
                 .withIds(andyWeir.getId(), morganHousel.getId())
                 .build();
 
-        Flux<MultiGetItem<Author>> authorFlux = reactiveElasticsearchTemplate.multiGet(idQuery, Author.class);
-        authorFlux.doOnNext(item -> {
+        Flux<MultiGetItem<Author>> authorFlux1 = reactiveElasticsearchTemplate.multiGet(idQuery, Author.class);
+        authorFlux1.doOnNext(item -> {
             log.info(item.getItem().toString());
         }).subscribe();
 

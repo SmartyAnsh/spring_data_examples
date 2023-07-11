@@ -1,7 +1,10 @@
 package com.smartdiscover.model;
 
 import lombok.Data;
-import org.springframework.data.annotation.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.RelationshipId;
@@ -9,20 +12,19 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
-@Node("Book")
-public class Book {
+@Node("Author")
+public class Author {
 
     @RelationshipId
     @GeneratedValue(UUIDStringGenerator.class)
     private String id;
 
-    private String name;
+    private String firstName;
 
-    private String summary;
+    private String lastName;
 
     @CreatedBy
     private String createdBy;
@@ -36,15 +38,19 @@ public class Book {
     @LastModifiedDate
     private Date dateUpdated;
 
-    private List<Author> authors;
+    private List<Book> books;
+
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
 
     @Override
     public String toString() {
-        return "Book{" +
+        return "Author{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", summary='" + summary + '\'' +
-                ((null != authors) ? ", authors=" + authors.stream().map(i -> i.getFullName()).collect(Collectors.toList()) + '\'' : "") +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ((null != books) ? ", books=" + books.stream().map(i -> i.getName()).collect(Collectors.toList()) + '\'' : "") +
                 ", createdBy='" + createdBy + '\'' +
                 ", dateCreated='" + dateCreated + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +
