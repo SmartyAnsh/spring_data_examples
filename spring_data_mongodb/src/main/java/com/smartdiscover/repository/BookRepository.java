@@ -10,4 +10,6 @@ public interface BookRepository extends MongoRepository<Book, String> {
     Book findFirstByName(String name);
 
     List<Book> findAllByName(String name);
+
+    Book findByNameAndAvailableIsNullOrAvailableIsTrue(String name);
 }

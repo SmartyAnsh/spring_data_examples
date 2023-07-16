@@ -5,9 +5,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.session.ClientSession;
 import com.smartdiscover.document.Author;
 import com.smartdiscover.document.Book;
-import com.smartdiscover.repository.AuthorRepository;
-import com.smartdiscover.repository.BookRepository;
-import com.smartdiscover.repository.ReactiveAuthorRepository;
+import com.smartdiscover.document.BookLoanEntry;
+import com.smartdiscover.document.FinePolicy;
+import com.smartdiscover.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +34,10 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers.endsWith;
 import static org.springframework.data.domain.ExampleMatcher.GenericPropertyMatchers.startsWith;
@@ -60,6 +60,12 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private BookLoanEntryRepository bookLoanEntryRepository;
+
+    @Autowired
+    private FinePolicyRepository finePolicyRepository;
 
     @Autowired
     private ReactiveAuthorRepository reactiveAuthorRepository;
@@ -90,6 +96,7 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
         //cleanup
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+        finePolicyRepository.deleteAll();
 
         // CRUD started
         Author author = new Author();
@@ -288,6 +295,95 @@ public class SpringDataMongodbApplication implements CommandLineRunner {
 
         log.info(String.valueOf(authorRepository.findAll()));
 
+        //bootstrap fine policy
+        FinePolicy finePolicy = new FinePolicy();
+        finePolicy.setDailyFineRate(10);
+        finePolicy.setMaxFineAmount(100);
+        finePolicy.setActive(true);
+        finePolicyRepository.save(finePolicy);
+
+        //book loan system
+
+        //loan book
+        BookLoanEntry bookLoanEntry = loanBook();
+        log.info(String.valueOf(bookLoanEntry));
+
+        //return book
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+        Date returnDate = Date.from(LocalDate.now().plusDays(20).atStartOfDay(defaultZoneId).toInstant());
+        bookLoanEntry = returnBook(bookLoanEntry.getId(), returnDate);
+
+        //calculate fine
+        double fineAmount = calculateFine(bookLoanEntry);
+        log.info(String.valueOf(fineAmount));
+
+    }
+
+    @Transactional
+    public BookLoanEntry loanBook() {
+        //default time zone
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+
+        //search book
+        String bookName = "Martian";
+        Book book = bookRepository.findByNameAndAvailableIsNullOrAvailableIsTrue(bookName);
+
+        //loan user info
+        String firstName = "John";
+        String lastName = "Smith";
+
+        //loan entry dates
+        Date loanDate = new Date();
+        Date dueDate = Date.from(LocalDate.now().plusDays(15).atStartOfDay(defaultZoneId).toInstant());
+
+        //book loan entry
+        BookLoanEntry bookLoanEntry = new BookLoanEntry();
+        bookLoanEntry.setBook(book);
+        bookLoanEntry.setUserFirstName(firstName);
+        bookLoanEntry.setUserFirstName(lastName);
+        bookLoanEntry.setLoanDate(loanDate);
+        bookLoanEntry.setDueDate(dueDate);
+        bookLoanEntry.setStatus("active");
+
+        bookLoanEntryRepository.save(bookLoanEntry);
+
+        //update book availability
+        book.setAvailable(false);
+        bookRepository.save(book);
+
+        return bookLoanEntry;
+    }
+
+    @Transactional
+    public BookLoanEntry returnBook(String bookLoanEntryId, Date returnDate) {
+        //fetch the loan entry
+        BookLoanEntry bookLoanEntry = bookLoanEntryRepository.findById(bookLoanEntryId).get();
+
+        //update the loan entry
+        bookLoanEntry.setReturnDate(returnDate);
+        bookLoanEntry.setStatus("returned");
+
+        bookLoanEntryRepository.save(bookLoanEntry);
+
+        //update the book availability
+        Book book = bookLoanEntry.getBook();
+        book.setAvailable(true);
+        bookRepository.save(book);
+
+        return bookLoanEntry;
+    }
+
+    public double calculateFine(BookLoanEntry bookLoanEntry) {
+        if (bookLoanEntry.getReturnDate().before(bookLoanEntry.getDueDate())) {
+            return new Double("0");
+        } else {
+            FinePolicy finePolicy = finePolicyRepository.findByActive(true);
+            long diffInMilliseconds = Math.abs(bookLoanEntry.getReturnDate().getTime() - bookLoanEntry.getDueDate().getTime());
+            long overDueDays = TimeUnit.DAYS.convert(diffInMilliseconds, TimeUnit.MILLISECONDS);
+
+            double totalFine = overDueDays * finePolicy.getDailyFineRate();
+            return (totalFine < finePolicy.getMaxFineAmount()) ? totalFine : finePolicy.getMaxFineAmount();
+        }
     }
 
 }

@@ -20,6 +20,8 @@ public class Book {
 
     private String summary;
 
+    private Boolean available;
+
     @CreatedBy
     private String createdBy;
 
