@@ -24,6 +24,8 @@ public class Book {
     private String name;
     private String summary;
 
+    private Boolean available;
+
     @CreatedBy
     private String createdBy;
 

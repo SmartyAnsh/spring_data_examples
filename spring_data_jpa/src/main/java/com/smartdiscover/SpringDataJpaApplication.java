@@ -2,7 +2,9 @@ package com.smartdiscover;
 
 import com.smartdiscover.entity.Author;
 import com.smartdiscover.entity.Book;
+import com.smartdiscover.entity.BookLoanEntry;
 import com.smartdiscover.repository.AuthorRepository;
+import com.smartdiscover.repository.BookLoanEntryRepository;
 import com.smartdiscover.repository.BookRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +18,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
 
 @SpringBootApplication
 @EnableJpaAuditing
@@ -36,6 +37,9 @@ public class SpringDataJpaApplication implements CommandLineRunner {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired
+    private BookLoanEntryRepository bookLoanEntryRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -106,6 +110,62 @@ public class SpringDataJpaApplication implements CommandLineRunner {
         log.info(String.valueOf(bookRepository.findById(103L)));
 
         log.info(String.valueOf(authorRepository.findById(54L)));
+
+        //book loan system
+
+        //loan book
+        BookLoanEntry bookLoanEntry = loanBook();
+        log.info(String.valueOf(bookLoanEntry));
+
+        //return book
+        returnBook(bookLoanEntry.getId());
+
+    }
+
+    @Transactional
+    public BookLoanEntry loanBook() {
+        //default time zone
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+
+        //search book
+        String bookName = "Atomic Habits";
+        Book book = bookRepository.findByName(bookName);
+
+        //loan entry dates
+        Date loanDate = new Date();
+        Date dueDate = Date.from(LocalDate.now().plusDays(15).atStartOfDay(defaultZoneId).toInstant());
+
+        //book loan entry
+        BookLoanEntry bookLoanEntry = new BookLoanEntry();
+        bookLoanEntry.setBook(book);
+        bookLoanEntry.setLoanDate(loanDate);
+        bookLoanEntry.setDueDate(dueDate);
+        bookLoanEntry.setStatus("active");
+
+        bookLoanEntryRepository.save(bookLoanEntry);
+
+        //update book availability
+        book.setAvailable(false);
+        bookRepository.save(book);
+
+        return bookLoanEntry;
+    }
+
+    @Transactional
+    public void returnBook(long bookLoanEntryId) {
+        //fetch the loan entry
+        BookLoanEntry bookLoanEntry = bookLoanEntryRepository.findById(bookLoanEntryId).get();
+
+        //update the loan entry
+        bookLoanEntry.setReturnDate(new Date());
+        bookLoanEntry.setStatus("returned");
+
+        bookLoanEntryRepository.save(bookLoanEntry);
+
+        //update the book availability
+        Book book = bookLoanEntry.getBook();
+        book.setAvailable(true);
+        bookRepository.save(book);
 
     }
 }
