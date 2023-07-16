@@ -131,6 +131,10 @@ public class SpringDataJpaApplication implements CommandLineRunner {
         String bookName = "Atomic Habits";
         Book book = bookRepository.findByName(bookName);
 
+        //loan user info
+        String firstName = "John";
+        String lastName = "Smith";
+
         //loan entry dates
         Date loanDate = new Date();
         Date dueDate = Date.from(LocalDate.now().plusDays(15).atStartOfDay(defaultZoneId).toInstant());
@@ -138,6 +142,8 @@ public class SpringDataJpaApplication implements CommandLineRunner {
         //book loan entry
         BookLoanEntry bookLoanEntry = new BookLoanEntry();
         bookLoanEntry.setBook(book);
+        bookLoanEntry.setUserFirstName(firstName);
+        bookLoanEntry.setUserFirstName(lastName);
         bookLoanEntry.setLoanDate(loanDate);
         bookLoanEntry.setDueDate(dueDate);
         bookLoanEntry.setStatus("active");
