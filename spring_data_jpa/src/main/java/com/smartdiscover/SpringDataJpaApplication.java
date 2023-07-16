@@ -129,7 +129,7 @@ public class SpringDataJpaApplication implements CommandLineRunner {
 
         //search book
         String bookName = "Atomic Habits";
-        Book book = bookRepository.findByName(bookName);
+        Book book = bookRepository.findByNameAndAvailableIsNullOrAvailableIsTrue(bookName);
 
         //loan user info
         String firstName = "John";
