@@ -9,6 +9,10 @@
         </layout>
     </appender>
 
+    <root level="error">
+        <appender-ref ref="Console" />
+    </root>
+
     <logger name="org.hibernate.SQL" level="debug" additivity="false">
         <appender-ref ref="Console" />
     </logger>
