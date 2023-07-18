@@ -1,9 +1,7 @@
 package com.smartdiscover;
 
-import com.smartdiscover.model.Author;
-import com.smartdiscover.model.Book;
-import com.smartdiscover.repository.AuthorRepository;
-import com.smartdiscover.repository.BookRepository;
+import com.smartdiscover.model.*;
+import com.smartdiscover.repository.*;
 import com.smartdiscover.service.EducativeMessagePubSub;
 import com.smartdiscover.util.PojoHashMapper;
 import org.slf4j.Logger;
@@ -21,7 +19,10 @@ import org.springframework.data.redis.hash.HashMapper;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 @SpringBootApplication
@@ -34,6 +35,15 @@ public class SpringDataRedisApplication implements CommandLineRunner {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired
+    private BookLoanEntryRepository bookLoanEntryRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ReservationQueueRepository reservationQueueRepository;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -62,8 +72,11 @@ public class SpringDataRedisApplication implements CommandLineRunner {
         //cleanup
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+        userRepository.deleteAll();
+        bookLoanEntryRepository.deleteAll();
+        reservationQueueRepository.deleteAll();
 
-        // CRUD started
+        /*// CRUD started
 
         //create author
         Author andyWeir = new Author();
@@ -242,6 +255,92 @@ public class SpringDataRedisApplication implements CommandLineRunner {
         reactiveRedisTemplate.opsForValue().set("Netherlands", "Amsterdam").subscribe();
 
         reactiveRedisTemplate.hasKey("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();
-        reactiveRedisTemplate.opsForValue().get("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();
+        reactiveRedisTemplate.opsForValue().get("Netherlands").doOnNext(a -> log.info(a.toString())).subscribe();*/
+
+        //bootstrap data
+        Book book1 = new Book();
+        book1.setName("Zero to One");
+        book1.setSummary("Notes on startups or how to build the future");
+        bookRepository.save(book1);
+
+        Book book2 = new Book();
+        book2.setName("Martian");
+        book2.setSummary("One problem at a time and survive");
+        bookRepository.save(book2);
+
+        //loanBook
+        loanBook("Martian", "John", "Smith");
+
+        loanBook("Zero to One", "Harry", "Potter");
+
+        loanBook("Zero to One", "Elon", "Musk");
+
+        loanBook("Zero to One", "John", "Smith");
+
+    }
+
+    @Transactional
+    public void loanBook(String bookName, String userFirstName, String userLastName) {
+        //default time zone
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+
+        //search book
+        Book book = bookRepository.findByName(bookName);
+
+        //search user
+        User user = userRepository.findByFirstNameAndLastName(userFirstName, userLastName);
+
+        //create the user if it doesn't exist
+        if (null == user) {
+            user = new User();
+            user.setFirstName(userFirstName);
+            user.setLastName(userLastName);
+            userRepository.save(user);
+
+            log.info("User created: " + user);
+        }
+
+        //create loan entry if book is available else update the reservation queue
+        if (null == book.getAvailable() || book.getAvailable()) {
+            //loan entry dates
+            Date loanDate = new Date();
+            Date dueDate = Date.from(LocalDate.now().plusDays(15).atStartOfDay(defaultZoneId).toInstant());
+
+            //book loan entry
+            BookLoanEntry bookLoanEntry = new BookLoanEntry();
+            bookLoanEntry.setBook(book);
+            bookLoanEntry.setUser(user);
+            bookLoanEntry.setLoanDate(loanDate);
+            bookLoanEntry.setDueDate(dueDate);
+            bookLoanEntry.setStatus("active");
+            bookLoanEntryRepository.save(bookLoanEntry);
+
+            //update book availability
+            book.setAvailable(false);
+            bookRepository.save(book);
+
+            log.info("Loan entry created: " + bookLoanEntry);
+        } else {
+            //search for existing ReservationQueue
+            ReservationQueue queue = reservationQueueRepository.findByBookName(bookName);
+
+            //update the queue if exists else create a reservation queue
+            if (null != queue) {
+                queue.getUserList().add(user);
+                reservationQueueRepository.save(queue);
+
+                log.info("Queue updated:" + queue);
+
+            } else {
+                queue = new ReservationQueue();
+                queue.setBookName(bookName);
+                queue.setUserList(List.of(user));
+
+                reservationQueueRepository.save(queue);
+
+                log.info("Queue created:" + queue);
+            }
+
+        }
     }
 }
