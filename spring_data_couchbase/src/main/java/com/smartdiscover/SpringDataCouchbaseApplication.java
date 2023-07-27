@@ -4,10 +4,9 @@ import com.couchbase.client.java.query.QueryScanConsistency;
 import com.couchbase.transactions.Transactions;
 import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
-import com.smartdiscover.repository.AuthorRepository;
-import com.smartdiscover.repository.BookRepository;
-import com.smartdiscover.repository.ReactiveAuthorRepository;
-import com.smartdiscover.repository.ReactiveBookRepository;
+import com.smartdiscover.model.BookReview;
+import com.smartdiscover.model.User;
+import com.smartdiscover.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.couchbase.core.query.QueryCriteria.where;
 
@@ -47,6 +47,12 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BookReviewRepository bookReviewRepository;
 
     @Autowired
     private CouchbaseTemplate couchbaseTemplate;
@@ -70,11 +76,13 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
+    //@Transactional
     public void run(String... args) throws Exception {
         //cleanup
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+        userRepository.deleteAll();
+        bookReviewRepository.deleteAll();
 
         // CRUD started
 
@@ -202,5 +210,61 @@ public class SpringDataCouchbaseApplication implements CommandLineRunner {
         reactiveCouchbaseTemplate.findByQuery(Author.class)
                 .all().doOnNext(a -> log.info(a.toString())).subscribe();
 
+        //bootstrap data
+        User johnSmith = new User();
+        johnSmith.setFirstName("John");
+        johnSmith.setLastName("Smith");
+        userRepository.save(johnSmith);
+
+        User peterSmith = new User();
+        peterSmith.setFirstName("Peter");
+        peterSmith.setLastName("Smith");
+        userRepository.save(peterSmith);
+
+        //book review system
+        Book book = bookRepository.findByName("Martian");
+        User user1 = userRepository.findByFirstNameAndLastName("John", "Smith");
+        int rating1 = 9;
+        String review1 = "interesting book";
+
+        reviewBook(book, user1, rating1, review1);
+
+        User user2 = userRepository.findByFirstNameAndLastName("Peter", "Smith");
+        int rating2 = 9;
+        String review2 = "good book";
+
+        log.info(String.valueOf(reviewBook(book, user2, rating2, review2)));
+
+        log.info(String.format("Avg rating of %s is %f", book.getName(), avgBookRating(book)));
+        log.info(String.format("%s reviews %s", book.getName(), getBookReviews(book)));
     }
+
+    public BookReview reviewBook(Book book, User user, int rating, String review) {
+        BookReview bookReview = new BookReview();
+        bookReview.setBook(book);
+        bookReview.setUser(user);
+        bookReview.setRating(rating);
+        bookReview.setReview(review);
+        bookReviewRepository.save(bookReview);
+
+        return bookReview;
+    }
+
+    public List<BookReview> findAllBookReviewByBook(Book book) {
+        List<BookReview> bookReviews = couchbaseTemplate.findByQuery(BookReview.class)
+                .consistentWith(QueryScanConsistency.REQUEST_PLUS)
+                .matching(where("book.id").is(book.getId())).all();
+        return bookReviews;
+    }
+
+    public Double avgBookRating(Book book) {
+        List<BookReview> bookReviews = findAllBookReviewByBook(book);
+        return bookReviews.stream().mapToInt(i -> i.getRating()).average().orElse(0);
+    }
+
+    public List<String> getBookReviews(Book book) {
+        List<BookReview> bookReviews = findAllBookReviewByBook(book);
+        return bookReviews.stream().map(i -> i.getReview()).collect(Collectors.toList());
+    }
+
 }

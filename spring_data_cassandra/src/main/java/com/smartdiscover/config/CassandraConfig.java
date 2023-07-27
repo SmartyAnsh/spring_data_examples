@@ -9,8 +9,8 @@ import org.springframework.data.cassandra.repository.config.EnableCassandraRepos
 @EnableCassandraRepositories(basePackages = {"com.smartdiscover.repository"})
 public class CassandraConfig {
 
-    public @Bean
-    CqlSession session() {
+    @Bean
+    public CqlSession session() {
         return CqlSession.builder().withKeyspace("educative").build();
     }
 

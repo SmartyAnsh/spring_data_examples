@@ -1,13 +1,13 @@
 package com.smartdiscover.repository;
 
 import com.smartdiscover.model.Book;
+import com.smartdiscover.model.BookReview;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-@Repository
-public interface BookRepository extends CouchbaseRepository<Book, String> {
+import java.util.List;
 
-    Book findByName(String name);
+@Repository
+public interface BookReviewRepository extends CouchbaseRepository<BookReview, String> {
 
 }
