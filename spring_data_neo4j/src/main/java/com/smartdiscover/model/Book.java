@@ -1,7 +1,10 @@
 package com.smartdiscover.model;
 
 import lombok.Data;
-import org.springframework.data.annotation.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.RelationshipId;
@@ -9,7 +12,6 @@ import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
@@ -38,13 +40,23 @@ public class Book {
 
     private List<Author> authors;
 
+    private List<Genre> genres;
+
+    private List<BookRating> ratings;
+
+    public double getAverageRating() {
+        return ratings.stream().mapToInt(i -> i.getRating()).average().orElse(0.0);
+    }
+
     @Override
     public String toString() {
         return "Book{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", summary='" + summary + '\'' +
-                ((null != authors) ? ", authors=" + authors.stream().map(i -> i.getFullName()).collect(Collectors.toList()) + '\'' : "") +
+                ((null != authors && !authors.isEmpty()) ? ", authors=" + authors.stream().map(i -> i.getFullName()).collect(Collectors.toList()) + '\'' : "") +
+                ((null != genres && !genres.isEmpty()) ? ", genres=" + genres.stream().map(i -> i.getGenreText()).collect(Collectors.toList()) + '\'' : "") +
+                ((null != ratings && !ratings.isEmpty()) ? ", ratings=" + ratings.stream().map(i -> i.getRating()).collect(Collectors.toList()) + '\'' : "") +
                 ", createdBy='" + createdBy + '\'' +
                 ", dateCreated='" + dateCreated + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +

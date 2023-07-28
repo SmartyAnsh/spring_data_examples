@@ -2,13 +2,10 @@ package com.smartdiscover;
 
 import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
-import com.smartdiscover.repository.AuthorRepository;
-import com.smartdiscover.repository.BookRepository;
-import com.smartdiscover.repository.ReactiveAuthorRepository;
-import com.smartdiscover.repository.ReactiveBookRepository;
-import org.neo4j.cypherdsl.core.Cypher;
-import org.neo4j.cypherdsl.core.Node;
-import org.neo4j.cypherdsl.core.Property;
+import com.smartdiscover.model.BookRating;
+import com.smartdiscover.model.Genre;
+import com.smartdiscover.model.Genre.GenreText;
+import com.smartdiscover.repository.*;
 import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,22 +14,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.neo4j.config.EnableNeo4jAuditing;
-import org.springframework.data.neo4j.core.*;
+import org.springframework.data.neo4j.core.DatabaseSelectionProvider;
+import org.springframework.data.neo4j.core.Neo4jTemplate;
+import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
+import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.data.neo4j.core.transaction.Neo4jTransactionManager;
 import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
 import org.springframework.data.neo4j.repository.config.Neo4jRepositoryConfigurationExtension;
 import org.springframework.data.neo4j.repository.config.ReactiveNeo4jRepositoryConfigurationExtension;
-import org.springframework.data.neo4j.repository.query.Query;
-import org.springframework.transaction.ReactiveTransactionManager;
-import org.springframework.transaction.TransactionManager;
 import reactor.core.publisher.Flux;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.smartdiscover.model.Genre.GenreText.*;
 
 @SpringBootApplication
 @EnableNeo4jAuditing
@@ -47,6 +46,12 @@ public class SpringDataNeo4jApplication implements CommandLineRunner {
     private BookRepository bookRepository;
 
     @Autowired
+    private BookRatingRepository bookRatingRepository;
+
+    @Autowired
+    private GenreRepository genreRepository;
+
+    @Autowired
     private Neo4jTemplate neo4jTemplate;
 
     @Autowired
@@ -57,6 +62,10 @@ public class SpringDataNeo4jApplication implements CommandLineRunner {
 
     @Autowired
     private ReactiveNeo4jTemplate reactiveNeo4jTemplate;
+
+    public static void main(String[] args) {
+        SpringApplication.run(SpringDataNeo4jApplication.class, args);
+    }
 
     @Bean(ReactiveNeo4jRepositoryConfigurationExtension.DEFAULT_TRANSACTION_MANAGER_BEAN_NAME)
     public ReactiveNeo4jTransactionManager reactiveTransactionManager(
@@ -78,15 +87,13 @@ public class SpringDataNeo4jApplication implements CommandLineRunner {
         return () -> Optional.of("Admin");
     }
 
-    public static void main(String[] args) {
-        SpringApplication.run(SpringDataNeo4jApplication.class, args);
-    }
-
     @Override
     public void run(String... args) throws Exception {
         //cleanup
         authorRepository.deleteAll();
         bookRepository.deleteAll();
+        bookRatingRepository.deleteAll();
+        genreRepository.deleteAll();
 
         // CRUD started
 
@@ -180,5 +187,68 @@ public class SpringDataNeo4jApplication implements CommandLineRunner {
         reactiveNeo4jTemplate.find(Author.class)
                 .all().doOnNext(a -> log.info(a.toString())).subscribe();
 
+        //bootstrap data
+
+        //create some genres
+
+        Genre scienceFiction = genreRepository.save(new Genre(SCIENCE_FICTION));
+        Genre fiction = genreRepository.save(new Genre(FICTION));
+        Genre thriller = genreRepository.save(new Genre(THRILLER));
+        Genre fantasy = genreRepository.save(new Genre(FANTASY));
+        Genre nonFiction = genreRepository.save(new Genre(NONFICTION));
+        Genre selfHelp = genreRepository.save(new Genre(SELF_HELP));
+        Genre adventure = genreRepository.save(new Genre(ADVENTURE));
+        Genre biography = genreRepository.save(new Genre(BIOGRAPHY));
+
+        //create 5 books with different genres and ratings
+
+        Book book1 = new Book();
+        book1.setName("Martian");
+        book1.setSummary("One problem at a time and survive");
+        book1.setGenres(Arrays.asList(scienceFiction, fiction, thriller));
+        book1.setRatings(Arrays.asList(new BookRating(8), new BookRating(7), new BookRating(9), new BookRating(9), new BookRating(10)));
+        bookRepository.save(book1);
+
+        Book book2 = new Book();
+        book2.setName("Dune");
+        book2.setSummary("Set on the desert planet Arrakis, Dune is the story of the boy Paul");
+        book2.setGenres(Arrays.asList(scienceFiction, fiction));
+        book2.setRatings(Arrays.asList(new BookRating(9), new BookRating(7), new BookRating(6), new BookRating(9), new BookRating(8)));
+        bookRepository.save(book2);
+
+        Book book3 = new Book();
+        book3.setName("Harry Potter and the Prisoner of Azkaban");
+        book3.setSummary("Harry Potter, along with his best friends, Ron and Hermione, is about to start his third year at Hogwarts School");
+        book3.setGenres(Arrays.asList(adventure, fiction, fantasy));
+        book3.setRatings(Arrays.asList(new BookRating(7), new BookRating(7), new BookRating(6), new BookRating(9), new BookRating(8)));
+        bookRepository.save(book3);
+
+        Book book4 = new Book();
+        book4.setName("Atomic Habits");
+        book4.setSummary("An Easy & Proven Way to Build Good Habits & Break Bad Ones");
+        book4.setGenres(Arrays.asList(selfHelp, nonFiction));
+        book4.setRatings(Arrays.asList(new BookRating(9), new BookRating(7), new BookRating(7), new BookRating(9), new BookRating(8)));
+        bookRepository.save(book4);
+
+        Book book5 = new Book();
+        book5.setName("Will");
+        book5.setSummary("One of the most dynamic and globally recognized entertainment forces of our time");
+        book5.setGenres(Arrays.asList(biography, nonFiction));
+        book5.setRatings(Arrays.asList(new BookRating(5), new BookRating(7), new BookRating(8), new BookRating(9), new BookRating(8)));
+        bookRepository.save(book5);
+
+        // recommendBook
+        log.info(String.valueOf(recommendBook(SCIENCE_FICTION)));
+        log.info(String.valueOf(recommendBook(SELF_HELP)));
+        log.info(String.valueOf(recommendBook(THRILLER)));
+        log.info(String.valueOf(recommendBook(FICTION)));
+        log.info(String.valueOf(recommendBook(NONFICTION)));
+    }
+
+    public List<String> recommendBook(GenreText genre) {
+        List<Book> books = bookRepository.findAllByGenres_Id(genreRepository.findByGenreText(genre.toString()).getId());
+
+        books.sort(Comparator.comparingDouble(Book::getAverageRating).reversed());
+        return books.stream().map(i -> i.getName() + ":" + i.getAverageRating()).collect(Collectors.toList());
     }
 }
