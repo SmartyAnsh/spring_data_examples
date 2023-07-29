@@ -6,8 +6,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
+import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.RelationshipId;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 import java.util.Date;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Node("Author")
 public class Author {
 
-    @RelationshipId
+    @Id
     @GeneratedValue(UUIDStringGenerator.class)
     private String id;
 
