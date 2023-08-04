@@ -14,16 +14,16 @@ import java.util.UUID;
 
 @Data
 @Table
-public class Book {
+public class Author {
 
     @PrimaryKey
     private UUID id;
 
     @Column
-    private String name;
+    private String firstName;
 
     @Column
-    private String summary;
+    private String lastName;
 
     @CreatedBy
     private String createdBy;
@@ -37,12 +37,16 @@ public class Book {
     @LastModifiedDate
     private Date dateUpdated;
 
+    public String getFullName() {
+        return lastName + " " + firstName;
+    }
+
     @Override
     public String toString() {
-        return "Book{" +
+        return "Author{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
-                ", summary='" + summary + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
                 ", createdBy='" + createdBy + '\'' +
                 ", dateCreated='" + dateCreated + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +
