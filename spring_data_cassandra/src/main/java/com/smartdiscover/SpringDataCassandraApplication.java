@@ -151,7 +151,7 @@ public class SpringDataCassandraApplication implements CommandLineRunner {
 
         //search using Query
         List<Book> books = cassandraTemplate.select(
-                query(where("name").in("Martian", "The Psychology of Money")).withAllowFiltering(),
+                query(where("name").in(psychologyOfMoney.getId(), UUID.randomUUID())).withAllowFiltering(),
                 Book.class);
         log.info(String.valueOf(books));
 
