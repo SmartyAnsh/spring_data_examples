@@ -2,11 +2,9 @@ package com.smartdiscover;
 
 import com.smartdiscover.model.Author;
 import com.smartdiscover.model.Book;
+import com.smartdiscover.model.BookAnalytics;
 import com.smartdiscover.model.BookByAuthor;
-import com.smartdiscover.repository.AuthorRepository;
-import com.smartdiscover.repository.BookByAuthorRepository;
-import com.smartdiscover.repository.BookRepository;
-import com.smartdiscover.repository.ReactiveAuthorRepository;
+import com.smartdiscover.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +38,9 @@ public class SpringDataCassandraApplication implements CommandLineRunner {
 
     @Autowired
     private BookByAuthorRepository bookByAuthorRepository;
+
+    @Autowired
+    private BookAnalyticsRepository bookAnalyticsRepository;
 
     @Autowired
     private CassandraTemplate cassandraTemplate;
@@ -151,7 +152,7 @@ public class SpringDataCassandraApplication implements CommandLineRunner {
 
         //search using Query
         List<Book> books = cassandraTemplate.select(
-                query(where("name").in(psychologyOfMoney.getId(), UUID.randomUUID())).withAllowFiltering(),
+                query(where("id").in(psychologyOfMoney.getId(), UUID.randomUUID())).withAllowFiltering(),
                 Book.class);
         log.info(String.valueOf(books));
 
@@ -180,5 +181,93 @@ public class SpringDataCassandraApplication implements CommandLineRunner {
 
         reactiveCassandraTemplate.select(Query.empty(), Author.class).doOnNext(a -> log.info(a.toString())).subscribe();
 
+
+        //bootstrap data
+
+        Book book1 = new Book();
+        book1.setId(UUID.randomUUID());
+        book1.setName("Atomic Habits");
+        bookRepository.save(book1);
+        bookAnalyticsRepository.save(new BookAnalytics(book1.getId(), book1.getName()));
+
+        Book book2 = new Book();
+        book2.setId(UUID.randomUUID());
+        book2.setName("Harry Potter and the chamber of secrets");
+        bookRepository.save(book2);
+        bookAnalyticsRepository.save(new BookAnalytics(book2.getId(), book2.getName()));
+
+        Book book3 = new Book();
+        book3.setId(UUID.randomUUID());
+        book3.setName("Lord of the rings");
+        bookRepository.save(book3);
+        bookAnalyticsRepository.save(new BookAnalytics(book3.getId(), book3.getName()));
+
+        Book book4 = new Book();
+        book4.setId(UUID.randomUUID());
+        book4.setName("Dune");
+        bookRepository.save(book4);
+        bookAnalyticsRepository.save(new BookAnalytics(book4.getId(), book4.getName()));
+
+        Book book5 = new Book();
+        book5.setId(UUID.randomUUID());
+        book5.setName("Sapiens: A Brief History of Humankind");
+        bookRepository.save(book5);
+        bookAnalyticsRepository.save(new BookAnalytics(book5.getId(), book5.getName()));
+
+        //update borrowedCount
+        updateBorrowedCount("Atomic Habits");
+        updateBorrowedCount("Harry Potter and the chamber of secrets");
+        updateBorrowedCount("Lord of the rings");
+        updateBorrowedCount("Dune");
+        updateBorrowedCount("Sapiens: A Brief History of Humankind");
+
+        updateViewedCount("Atomic Habits");
+        updateViewedCount("Harry Potter and the chamber of secrets");
+        updateViewedCount("Lord of the rings");
+        updateViewedCount("Dune");
+        updateViewedCount("Sapiens: A Brief History of Humankind");
+
+        updateAvgRating("Dune", 9);
+        updateAvgRating("Dune", 7);
+
+        updateAvgRating("Atomic Habits", 8);
+        updateAvgRating("Atomic Habits", 9);
+
+        updateViewedCount("Dune");
+        updateAvgRating("Lord of the rings", 9);
+
+        log.info(String.valueOf(checkBookAnalytics("Dune")));
+        log.info(String.valueOf(checkBookAnalytics("Lord of the rings")));
+        log.info(String.valueOf(checkBookAnalytics("Atomic Habits")));
+        log.info(String.valueOf(checkBookAnalytics("Sapiens: A Brief History of Humankind")));
     }
+
+    public void updateBorrowedCount(String bookName) {
+        BookAnalytics bookAnalytics = bookAnalyticsRepository.findByBookName(bookName);
+        bookAnalytics.incrementBorrowedCount();
+        bookAnalyticsRepository.save(bookAnalytics);
+    }
+
+    public void updateViewedCount(String bookName) {
+        BookAnalytics bookAnalytics = bookAnalyticsRepository.findByBookName(bookName);
+        bookAnalytics.incrementViewedCount();
+        bookAnalyticsRepository.save(bookAnalytics);
+    }
+
+    public void updateAvgRating(String bookName, int rating) {
+        BookAnalytics bookAnalytics = bookAnalyticsRepository.findByBookName(bookName);
+
+        double avgRating = (bookAnalytics.getAverageRating() * bookAnalytics.getTotalRatings() + rating)
+                / (bookAnalytics.getTotalRatings() + 1);
+
+        bookAnalytics.setAverageRating(avgRating);
+        bookAnalytics.incrementTotalRatings();
+
+        bookAnalyticsRepository.save(bookAnalytics);
+    }
+
+    public BookAnalytics checkBookAnalytics(String bookName) {
+        return bookAnalyticsRepository.findByBookName(bookName);
+    }
+
 }
