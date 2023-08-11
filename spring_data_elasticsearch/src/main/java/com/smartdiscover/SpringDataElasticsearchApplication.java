@@ -37,16 +37,16 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(SpringDataElasticsearchApplication.class);
 
     @Autowired
-    ElasticsearchOperations elasticsearchOperations;
+    private ElasticsearchOperations elasticsearchOperations;
 
     @Autowired
-    ReactiveElasticsearchTemplate reactiveElasticsearchTemplate;
+    private ReactiveElasticsearchTemplate reactiveElasticsearchTemplate;
 
     @Autowired
-    ReactiveElasticsearchClient elasticsearchClient;
+    private ReactiveElasticsearchClient elasticsearchClient;
 
     @Autowired
-    RestClient restClient;
+    private RestClient restClient;
 
     @Autowired
     private BookRepository bookRepository;
@@ -198,7 +198,7 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
         reactiveElasticsearchTemplate.save(pauloCoelho).doOnNext((x) -> log.info(String.valueOf(x))).subscribe();
 
         //find all authors using reactiveAuthorRepository
-        log.info("read all authors using ReactiveAuthorRepository");
+        log.info("read all authors using ReactiveElasticsearchTemplate");
 
         Query idQuery = NativeQuery.builder()
                 .withIds(andyWeir.getId(), morganHousel.getId())
@@ -208,7 +208,6 @@ public class SpringDataElasticsearchApplication implements CommandLineRunner {
         authorFlux1.doOnNext(item -> {
             log.info(item.getItem().toString());
         }).subscribe();
-
 
         reactiveElasticsearchTemplate.get(andyWeir.getId(), Author.class).doOnNext((x) -> log.info(String.valueOf(x))).subscribe();
     }
