@@ -16,6 +16,10 @@
         <appender-ref ref="Console" />
     </root>
 
+    <logger name="org.elasticsearch.client.RestClient" level="error" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
     <logger name="com.smartdiscover" level="debug" additivity="false">
         <appender-ref ref="Console" />
     </logger>
